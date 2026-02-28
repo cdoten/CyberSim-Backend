@@ -38,6 +38,16 @@ app.get('/', async (req, res) => {
   });
 });
 
+app.get('/health', async (req, res) => {
+  try {
+    await db.raw('SELECT 1;');
+    res.status(200).send({ status: 'ok' });
+  } catch (err) {
+    logger.error({ err }, 'Health check failed');
+    res.status(503).send({ status: 'not ok' });
+  }
+});
+
 // STATIC DB data is exposed via REST api
 
 app.get('/mitigations', async (req, res) => {
