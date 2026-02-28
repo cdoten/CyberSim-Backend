@@ -1,18 +1,21 @@
 {
-  "name": "ndi-cybersim-api",
-  "version": "1.0.0",
+  "name": "cybersim-api",
+  "version": "1.1.0",
   "description": "",
   "main": "index.js",
   "author": "Rolan Szoke (fwalkwithm@gmail.com)",
   "license": "ISC",
   "scripts": {
-    "start": "nodemon -r dotenv/config . | pino-pretty",
+    "dev": "LOG_LEVEL=info nodemon -r dotenv/config index.js",
+    "start": "node -r dotenv/config index.js",
+    "start:prod": "NODE_ENV=production node -r dotenv/config index.js",
     "migrate": "knex migrate:latest",
     "unmigrate": "knex migrate:rollback",
     "seed": "knex seed:run",
     "reset-db": "npm run unmigrate && npm run migrate && npm run seed",
     "lint": "eslint .",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "smoke": "bash scripts/smoke.sh"
   },
   "dependencies": {
     "@types/jest": "^26.0.8",
@@ -30,7 +33,7 @@
     "yup": "^0.32.11"
   },
   "devDependencies": {
-    "eslint": "^7.6.0",
+    "eslint": "^8.57.1",
     "eslint-config-airbnb-base": "^14.2.0",
     "eslint-config-prettier": "^6.11.0",
     "eslint-plugin-import": "^2.22.0",
@@ -39,7 +42,7 @@
     "husky": "^4.2.5",
     "jest": "26.2.2",
     "nodemon": "2.0.4",
-    "pino-pretty": "4.1.0",
+    "pino-pretty": "^4.8.0",
     "prettier": "^2.0.5",
     "supertest": "4.0.2"
   },
