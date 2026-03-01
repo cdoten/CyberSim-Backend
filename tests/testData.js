@@ -1,8 +1,8 @@
 const dummyGame = {
   id: 'TestGame',
   state: 'PREPARATION',
-  poll: 40,
-  budget: 7000,
+  poll: 55,
+  budget: 6000,
   started_at: null,
   paused: true,
   millis_taken_before_started: 0,
