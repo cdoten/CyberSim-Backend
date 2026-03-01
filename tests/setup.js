@@ -1,8 +1,11 @@
-if (!process.env.DB_URL || !process.env.DB_URL.includes("cybersim_test")) {
-  throw new Error(`Refusing to run tests against non-test DB_URL: ${process.env.DB_URL}`);
+if (!process.env.DB_URL || !process.env.DB_URL.includes('cybersim_test')) {
+  throw new Error(
+    `Refusing to run tests against non-test DB_URL: ${process.env.DB_URL}`,
+  );
 }
 
-const db = require("../src/models/db");
+const db = require('../src/models/db');
+
 const testSeed = async () => {
   // INJECTIONS
   await db('injection').del();
