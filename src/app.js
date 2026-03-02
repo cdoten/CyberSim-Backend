@@ -143,7 +143,13 @@ app.get('/curveballs', async (req, res) => {
 app.post('/migrate', async (req, res) => {
   const { password } = req.body;
 
-  if (password !== config.migrationPassword) {
+  // Ensure there is in fact some password set.
+  const configuredPassword = config.migrationPassword;
+  if (!configuredPassword) {
+    return res.status(500).send({ message: 'Migration password is not configured on the server.' });
+  }
+
+  if (password !== configuredPassword) {
     return res.status(400).json({ password: 'Invalid master password' });
   }
 
@@ -178,7 +184,12 @@ app.post('/migrate', async (req, res) => {
         validation: true,
         message:
           'Airtable authorization error. Check the base access and token scopes (data.records:read, schema.bases:read).',
-        errors: [{ message: 'Token does not have access to this base or lacks required scopes.' }],
+        errors: [
+          {
+            message:
+              'Token does not have access to this base or lacks required scopes.',
+          },
+        ],
       });
     }
 
