@@ -61,6 +61,7 @@ async function validateForDb(tableName, items) {
   return validate(dbSchemas[tableName], items, tableName);
 }
 
+
 async function saveToDb(tableName, items) {
   await db(tableName).insert(items);
 }
@@ -268,6 +269,14 @@ async function migrate(accessToken, baseId) {
   await saveToDb('curveball', sqlCurveballs);
   await saveToDb('injection_response', sqlInjectionResponse);
   await saveToDb('action_role', sqlActionRole);
+
+  // Write out information about the updates
+  logger.info({
+    mitigationCount: sqlMitigations.length,
+    responseCount: sqlResponses.length,
+    injectionCount: sqlInjections.length,
+  }, 'Migration inserted row counts');
+
 }
 
 module.exports = migrate;
