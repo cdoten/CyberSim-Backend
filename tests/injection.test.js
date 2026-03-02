@@ -2,10 +2,17 @@ const db = require('../src/models/db');
 const { getInjections } = require('../src/models/injection');
 const { staticInjections } = require('./testData');
 
+const resetAllTables = require('./resetAllTables');
+const seedTestData = require('./seedTestData');
+
 describe('Get Injections', () => {
-  afterAll(async (done) => {
+  beforeEach(async () => {
+    await resetAllTables();
+    await seedTestData(db);
+  });
+
+  afterAll(async () => {
     await db.destroy();
-    done();
   });
 
   test('injection table should return with responses', async () => {
