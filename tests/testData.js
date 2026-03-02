@@ -148,7 +148,7 @@ const staticInjections = [
       {
         id: 'RP2',
         description: 'Change office lock at LB',
-        cost: null,
+        cost: 0,
         location: 'local',
         mitigation_type: 'local',
         mitigation_id: 'M2',
