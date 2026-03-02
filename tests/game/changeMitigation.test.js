@@ -16,32 +16,26 @@ describe('Change Mitigation', () => {
     await db('game_injection').insert(dummyGameInjections);
   });
 
-  afterAll(async (done) => {
+  afterAll(async () => {
     await db.destroy();
-    done();
   });
 
   const gameId = dummyGame.id;
 
   test('should change mitigation state', async () => {
-    const {
-      mitigation_id: mitigationId,
-      state,
-      location,
-      id,
-    } = dummyGameMitigations[0];
+    const { mitigation_id: mitigationId, state } = dummyGameMitigations[0];
 
     const { mitigations } = await changeMitigation({
       mitigationId,
-      mitigationType: location,
       mitigationValue: !state,
       gameId,
     });
 
     const changedMitigation = mitigations.find(
-      (mitigation) => mitigation.id === id,
+      (m) => m.mitigation_id === mitigationId,
     );
 
+    expect(changedMitigation).toBeDefined();
     expect(changedMitigation.state).toBe(!state);
   });
 
@@ -51,25 +45,20 @@ describe('Change Mitigation', () => {
       .where({ id: gameId })
       .first();
 
-    const {
-      mitigation_id: mitigationId,
-      state,
-      location,
-    } = dummyGameMitigations[0];
+    const { mitigation_id: mitigationId, state } = dummyGameMitigations[0];
 
     const { cost } = await db('mitigation')
-      .select(`${location}_cost as cost`)
+      .select('cost')
       .where({ id: mitigationId })
       .first();
 
     const { budget: newBudget } = await changeMitigation({
       mitigationId,
-      mitigationType: location,
       mitigationValue: !state,
       gameId,
     });
 
-    expect(newBudget).toBe(budget - cost);
+    expect(newBudget).toBe(budget - (cost || 0));
   });
 
   test('should not reduce game budget if mitigation value is false', async () => {
@@ -78,11 +67,10 @@ describe('Change Mitigation', () => {
       .where({ id: gameId })
       .first();
 
-    const { mitigation_id: mitigationId, location } = dummyGameMitigations[0];
+    const { mitigation_id: mitigationId } = dummyGameMitigations[0];
 
     const { budget: newBudget } = await changeMitigation({
       mitigationId,
-      mitigationType: location,
       mitigationValue: false,
       gameId,
     });
@@ -95,15 +83,10 @@ describe('Change Mitigation', () => {
       .where({ id: gameId })
       .update({ state: GameStates.SIMULATION });
 
-    const {
-      mitigation_id: mitigationId,
-      location,
-      state,
-    } = dummyGameMitigations[0];
+    const { mitigation_id: mitigationId, state } = dummyGameMitigations[0];
 
     await changeMitigation({
       mitigationId,
-      mitigationType: location,
       mitigationValue: !state,
       gameId,
     });
@@ -124,15 +107,10 @@ describe('Change Mitigation', () => {
       .where({ id: gameId })
       .update({ state: GameStates.SIMULATION });
 
-    const {
-      mitigation_id: mitigationId,
-      location,
-      state,
-    } = dummyGameMitigations[0];
+    const { mitigation_id: mitigationId, state } = dummyGameMitigations[0];
 
     await changeMitigation({
       mitigationId,
-      mitigationType: location,
       mitigationValue: !state,
       gameId,
     });
@@ -142,7 +120,6 @@ describe('Change Mitigation', () => {
         game_id: gameId,
         type: 'Budget Item Purchase',
         mitigation_id: mitigationId,
-        mitigation_type: location,
       })
       .first();
 
@@ -152,16 +129,14 @@ describe('Change Mitigation', () => {
   test('should throw if game budget < mitigation cost', async () => {
     await db('game').where({ id: gameId }).update({ budget: 0 });
 
-    const {
-      mitigation_id: mitigationId,
-      state,
-      location,
-    } = dummyGameMitigations[0];
+    const { mitigation_id: mitigationId, state } = dummyGameMitigations[0];
+
+    // Force this mitigation to have a non-zero cost so the budget check is meaningful
+    await db('mitigation').where({ id: mitigationId }).update({ cost: 1 });
 
     await expect(
       changeMitigation({
         mitigationId,
-        mitigationType: location,
         mitigationValue: !state,
         gameId,
       }),

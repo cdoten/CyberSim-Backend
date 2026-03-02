@@ -29,7 +29,7 @@ exports.up = async (knex) => {
     tbl.string('description').notNullable();
     tbl.integer('cost');
     tbl.enu('location', ['hq', 'local', 'party']).notNullable();
-    // use mitigation costs of mitigation_id if no (no means null not 0) cost specified above
+    // use mitigation  of mitigation_id if no (no means null not 0) cost specified above
     tbl.enu('mitigation_type', ['hq', 'local', 'party']);
     tbl.string('mitigation_id');
     tbl.foreign('mitigation_id').references('id').inTable('mitigation');
@@ -54,8 +54,8 @@ exports.up = async (knex) => {
     // Emit these changes on game state when injection happens
     tbl.specificType('systems_to_disable', 'text ARRAY'); // Switch these systems to FALSE
     tbl.decimal('poll_change');
-    tbl.string('followup_injecion');
-    tbl.foreign('followup_injecion').references('id').inTable('injection');
+    tbl.string('followup_injection');
+    tbl.foreign('followup_injection').references('id').inTable('injection');
   });
 
   // MANY injection_response to MANY injection

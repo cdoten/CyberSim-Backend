@@ -4,6 +4,10 @@ const logger = require('../logger');
 const GameStates = require('../constants/GameStates');
 const { getTimeTaken } = require('../util');
 
+const ERR_NOT_ENOUGH_BUDGET = 'Not enough budget';
+const ERR_RESPONSE_NOT_ALLOWED = 'Response not allowed';
+const ERR_CANNOT_START_FINALIZED_GAME = 'Cannot start finalized game';
+
 const getGame = (id) =>
   db('game')
     .select(
@@ -66,11 +70,11 @@ const createGame = async (
     })),
   );
 
-  const injections = await db('injection').select('id as injecionId');
+  const injections = await db('injection').select('id as injectionId');
   await db('game_injection').insert(
-    injections.map(({ injecionId }) => ({
+    injections.map(({ injectionId }) => ({
       game_id: id,
-      injection_id: injecionId,
+      injection_id: injectionId,
     })),
   );
   return getGame(id);
@@ -89,55 +93,66 @@ const changeMitigation = async ({ mitigationId, mitigationValue, gameId }) => {
       .where({ id: gameId })
       .first();
 
-    const { gameMitigationValue, gameMitigationId } = await db(
-      'game_mitigation',
-    )
-      .select(
-        'game_mitigation.state as gameMitigationValue',
-        'game_mitigation.id as gameMitigationId',
-      )
+    const mitigationRow = await db('game_mitigation')
+      .select('state', 'id')
       .where({
         game_id: gameId,
         mitigation_id: mitigationId,
       })
       .first();
 
+    const gameMitigationValue = mitigationRow.state;
+
     if (gameMitigationValue !== mitigationValue) {
-      const { cost } = await db('mitigation')
+      const mitigation = await db('mitigation')
         .select('cost')
         .where({ id: mitigationId })
         .first();
-      if (cost) {
+
+      const cost = mitigation?.cost;
+
+      // --- Budget handling ---
+      if (cost != null && cost > 0) {
         if (mitigationValue && game.budget < cost) {
-          throw new Error('Not enough budget');
+          throw new Error(ERR_NOT_ENOUGH_BUDGET);
         }
+
+        const newBudget = mitigationValue
+          ? game.budget - cost
+          : game.budget + cost;
+
         await db('game')
           .where({ id: gameId })
-          .update({
-            budget: Math.max(
-              0,
-              mitigationValue ? game.budget - cost : game.budget + cost,
-            ),
-          });
+          .update({ budget: Math.max(0, newBudget) });
       }
+
+      // --- Update mitigation ---
+      const updateFields = { state: mitigationValue };
+
+      if (game.state === GameStates.PREPARATION) {
+        updateFields.preparation = mitigationValue;
+      }
+
       await db('game_mitigation')
-        .where({ id: gameMitigationId })
-        .update({
-          state: mitigationValue,
-          ...(game.state === GameStates.PREPARATION
-            ? { preparation: mitigationValue }
-            : {}),
-        });
+        .where({
+          game_id: gameId,
+          mitigation_id: mitigationId,
+        })
+        .update(updateFields);
+
+      // --- If not in preparation, log + prevent injections ---
       if (game.state !== GameStates.PREPARATION) {
         const timeTaken = getTimeTaken(game);
+
         await db('game_injection')
           .where({ game_id: gameId, delivered: false })
           .whereIn('injection_id', function findInjectionsToSkip() {
-            this.select('id').from('injection').where({
-              skipper_mitigation: mitigationId,
-            });
+            this.select('id')
+              .from('injection')
+              .where({ skipper_mitigation: mitigationId });
           })
           .update({ prevented: true, prevented_at: timeTaken });
+
         await db('game_log').insert({
           game_id: gameId,
           game_timer: timeTaken,
@@ -147,12 +162,20 @@ const changeMitigation = async ({ mitigationId, mitigationValue, gameId }) => {
       }
     }
   } catch (error) {
-    logger.error('changeMitigation ERROR: %s', error);
-    if (error.message === 'Not enough budget') {
+    logger.error('changeMitigation ERROR: %s', error?.stack || error);
+    logger.error('changeMitigation context: %j', {
+      gameId,
+      mitigationId,
+      mitigationValue,
+    });
+
+    if (error.message === ERR_NOT_ENOUGH_BUDGET) {
       throw error;
     }
+
     throw new Error('Server error on change mitigation');
   }
+
   return getGame(gameId);
 };
 
@@ -166,7 +189,7 @@ const startSimulation = async (gameId) => {
       .where({ id: gameId })
       .first();
     if (state === GameStates.ASSESSMENT) {
-      throw new Error('Cannot start finalized game');
+      throw new Error(ERR_CANNOT_START_FINALIZED_GAME);
     }
     await db('game')
       .where({ id: gameId })
@@ -209,10 +232,10 @@ const startSimulation = async (gameId) => {
           : 'Timer Started',
     });
   } catch (error) {
-    if (error.message === 'Cannot start finalized game') {
+    if (error.message === ERR_CANNOT_START_FINALIZED_GAME) {
       throw error;
     }
-    logger.error('startSimulation ERROR: %s', error);
+    logger.error('startSimulation ERROR: %s', error?.stack || error);
     throw new Error('Server error on start simulation');
   }
   return getGame(gameId);
@@ -249,9 +272,9 @@ const pauseSimulation = async ({ gameId, finishSimulation = false }) => {
     });
   } catch (error) {
     if (finishSimulation) {
-      logger.error('finishSimulation ERROR: %s', error);
+      logger.error('finishSimulation ERROR: %s', error?.stack || error);
     } else {
-      logger.error('pauseSimulation ERROR: %s', error);
+      logger.error('pauseSimulation ERROR: %s', error?.stack || error);
     }
     throw new Error('Server error on pause simulation');
   }
@@ -283,75 +306,96 @@ const makeResponses = async ({
     const timeTaken = getTimeTaken(game);
     if (responseIds?.length) {
       const responses = await getResponsesById(responseIds);
-      const gameMitigations = game.mitigations.reduce(
-        (mitigationsAcc, { mitigation_id: mitigationId, location, state }) => ({
-          ...mitigationsAcc,
-          [`${mitigationId}_${location}`]: state,
-        }),
-        {},
+      // Which mitigations are active (purchased) in this game?
+      const purchased = new Set(
+        (game.mitigations || [])
+          .filter((m) => m.state)
+          .map((m) => m.mitigation_id),
       );
+
+      // Pull applicability flags (hq/local) for any required mitigations
+      const requiredIds = [
+        ...new Set(responses.map((r) => r.required_mitigation).filter(Boolean)),
+      ];
+
+      const applicabilityRows = requiredIds.length
+        ? await db('mitigation')
+            .select('id', 'is_hq', 'is_local')
+            .whereIn('id', requiredIds)
+        : [];
+
+      const applicability = applicabilityRows.reduce((acc, m) => {
+        acc[m.id] = { hq: !!m.is_hq, local: !!m.is_local };
+        return acc;
+      }, {});
+
       // CHECK REQUIRED MITIGATION
-      responses.forEach(
-        ({
-          required_mitigation_type: requiredMitigationType,
-          required_mitigation: requiredMitigation,
-        }) => {
-          if (
-            requiredMitigationType &&
-            requiredMitigation &&
-            !(requiredMitigationType === 'party'
-              ? gameMitigations[`${requiredMitigation}_hq`] &&
-                gameMitigations[`${requiredMitigation}_local`]
-              : gameMitigations[
-                  `${requiredMitigation}_${requiredMitigationType}`
-                ])
-          ) {
-            throw new Error('Response not allowed');
-          }
-        },
-      );
+      // CHECK REQUIRED MITIGATION
+      responses.forEach((response) => {
+        const requiredMitigationType = response.required_mitigation_type;
+        const requiredMitigationId = response.required_mitigation;
+
+        // If there is no requirement, nothing to validate for this response.
+        if (!requiredMitigationId) {
+          return;
+        }
+
+        // Rule 1: required mitigation must be purchased (enabled) in this game
+        if (!purchased.has(requiredMitigationId)) {
+          throw new Error(ERR_RESPONSE_NOT_ALLOWED);
+        }
+
+        // Rule 2: required mitigation must be applicable to the required "type"
+        // based on mitigation.is_hq / mitigation.is_local flags.
+        const flags = applicability[requiredMitigationId] || {
+          hq: false,
+          local: false,
+        };
+
+        if (requiredMitigationType === 'hq' && !flags.hq) {
+          throw new Error(ERR_RESPONSE_NOT_ALLOWED);
+        }
+
+        if (requiredMitigationType === 'local' && !flags.local) {
+          throw new Error(ERR_RESPONSE_NOT_ALLOWED);
+        }
+
+        if (requiredMitigationType === 'party' && !(flags.hq && flags.local)) {
+          throw new Error(ERR_RESPONSE_NOT_ALLOWED);
+        }
+      });
       // CHECK AVAILABLE BUDGET
-      const cost = responses.reduce(
-        (acc, { cost: responseCost }) => acc + responseCost,
-        0,
-      );
+      const cost = responses.reduce((acc, r) => acc + (Number(r.cost) || 0), 0);
+
       if (game.budget < cost) {
-        throw new Error('Not enough budget');
+        throw new Error(ERR_NOT_ENOUGH_BUDGET);
       }
       // ALLOCATE BUDGET
-      if (cost) {
+      if (cost > 0) {
         await db('game')
           .where({ id: gameId })
           .update({ budget: Math.max(0, game.budget - cost) });
       }
       // SET MITIGATIONS
       await Promise.all(
-        responses.map(
-          async ({
-            mitigation_type: mitigationType,
-            mitigation_id: mitigationId,
-          }) => {
-            if (mitigationId) {
-              await db('game_mitigation')
-                .where({
-                  game_id: gameId,
-                  mitigation_id: mitigationId,
-                  ...(mitigationType !== 'party'
-                    ? { location: mitigationType }
-                    : {}),
-                })
-                .update({ state: true });
-              await db('game_injection')
-                .where({ game_id: gameId, delivered: false, prevented: false })
-                .whereIn('injection_id', function findInjectionsToSkip() {
-                  this.select('id').from('injection').where({
-                    skipper_mitigation: mitigationId,
-                  });
-                })
-                .update({ prevented: true, prevented_at: timeTaken });
-            }
-          },
-        ),
+        responses.map(async ({ mitigation_id: mitigationId }) => {
+          if (mitigationId) {
+            await db('game_mitigation')
+              .where({
+                game_id: gameId,
+                mitigation_id: mitigationId,
+              })
+              .update({ state: true });
+            await db('game_injection')
+              .where({ game_id: gameId, delivered: false, prevented: false })
+              .whereIn('injection_id', function findInjectionsToSkip() {
+                this.select('id').from('injection').where({
+                  skipper_mitigation: mitigationId,
+                });
+              })
+              .update({ prevented: true, prevented_at: timeTaken });
+          }
+        }),
       );
       // SET SYSTEMS
       const systemIdsToRestore = responses.reduce(
@@ -372,16 +416,16 @@ const makeResponses = async ({
     }
     // SET GAME INJECTION
     if (injectionId) {
-      const { followupInjecion } = await db('injection')
-        .select('followup_injecion as followupInjecion')
+      const { followupInjection } = await db('injection')
+        .select('followup_injection as followupInjection')
         .where('id', injectionId)
         .first();
-      if (followupInjecion) {
+      if (followupInjection) {
         await db('game_injection')
           .where({
             game_id: gameId,
             delivered: false,
-            injection_id: followupInjecion,
+            injection_id: followupInjection,
           })
           .update({
             prevented: true,
@@ -409,17 +453,26 @@ const makeResponses = async ({
         response_id: responseIds[0],
       });
     }
+    return getGame(gameId);
   } catch (error) {
-    logger.error('makeResponses ERROR: %s', error);
+    logger.error('makeResponses ERROR: %s', error?.stack || error);
+    logger.error('makeResponses context: %j', {
+      gameId,
+      injectionId,
+      responseIds,
+      hasCustomResponse: !!customResponse,
+    });
     if (
-      error.message === 'Not enough budget' ||
-      error.message === 'Response not allowed'
+      error.message === ERR_NOT_ENOUGH_BUDGET ||
+      error.message === ERR_RESPONSE_NOT_ALLOWED
     ) {
       throw error;
     }
-    throw new Error('Server error on making respone');
+    const e = new Error(`Server error in makeResponses: ${error.message}`);
+    e.cause = error;
+    e.meta = { gameId, injectionId, responseIds }; // optional
+    throw e;
   }
-  return getGame(gameId);
 };
 
 const deliverGameInjection = async ({ gameId, injectionId }) => {
@@ -460,7 +513,7 @@ const deliverGameInjection = async ({ gameId, injectionId }) => {
       })
       .update({ delivered: true, delivered_at: getTimeTaken(game) });
   } catch (error) {
-    logger.error('deliverGameInjection ERROR: %s', error);
+    logger.error('deliverGameInjection ERROR: %s', error?.stack || error);
     throw new Error('Server error on changing games injection deliverance');
   }
   return getGame(gameId);
@@ -490,7 +543,10 @@ const makeNonCorrectInjectionResponse = async ({
         ...(customResponse ? { custom_response: customResponse } : {}),
       });
   } catch (error) {
-    logger.error('makeNonCorrectInjectionResponse ERROR: %s', error);
+    logger.error(
+      'makeNonCorrectInjectionResponse ERROR: %s',
+      error?.stack || error,
+    );
     throw new Error('Server error on making non correct injection response');
   }
   return getGame(gameId);
@@ -522,7 +578,7 @@ const performAction = async ({ gameId, actionId }) => {
       .first();
 
     if (game.budget < cost) {
-      throw new Error('Not enough budget');
+      throw new Error(ERR_NOT_ENOUGH_BUDGET);
     }
 
     const unavailableSystems = await db('game_system')
@@ -549,7 +605,7 @@ const performAction = async ({ gameId, actionId }) => {
       action_id: actionId,
     });
   } catch (error) {
-    logger.error('performAction ERROR: %s', error);
+    logger.error('performAction ERROR: %s', error?.stack || error);
     switch (error.message) {
       case 'Not enough budget':
         throw error;
@@ -598,7 +654,7 @@ const performCurveball = async ({ gameId, curveballId }) => {
       curveball_id: curveballId,
     });
   } catch (error) {
-    logger.error('performCurveball ERROR: %s', error);
+    logger.error('performCurveball ERROR: %s', error?.stack || error);
     throw new Error('Server error on performing action');
   }
   return getGame(gameId);

@@ -175,7 +175,7 @@ async function migrate(accessToken, baseId) {
     injection.location = locationsMap[injection.locations];
     injection.recommendations = recommendations[injection.recommendations];
     injection.type = eventTypes[injection.event_types] || 'Board';
-    injection.followup_injecion = injection.followup_event;
+    injection.followup_injection = injection.followup_event;
     injection.trigger_time *= 1000;
     injection.recipient_role = rolesMap[injection.role];
     injection.asset_code = injection.spreadsheet_id

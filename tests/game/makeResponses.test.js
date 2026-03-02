@@ -36,8 +36,26 @@ describe('Make Responses', () => {
     ).rejects.toThrow(/Response not allowed/);
   });
 
+  test('should allow required mitigation when purchased and applicable', async () => {
+    // Purchase M1 globally
+    await db('game_mitigation')
+      .where({ game_id: dummyGame.id, mitigation_id: 'M1' })
+      .update({ state: true });
+
+    await expect(
+      makeResponses({
+        responseIds: ['RP1'], // RP1 requires M1 local
+        gameId: dummyGame.id,
+        injectionId: 'I1',
+      }),
+    ).resolves.toBeTruthy();
+  });
+
   test('should throw if budget is not enough', async () => {
     await db('game').where({ id: dummyGame.id }).update({ budget: 0 });
+
+    // Force RP2 to cost something so the budget check is meaningful
+    await db('response').where({ id: 'RP2' }).update({ cost: 1 });
 
     await expect(
       makeResponses({
@@ -66,11 +84,8 @@ describe('Make Responses', () => {
   });
 
   test('should set game mitigation state true', async () => {
-    const { mitigationType, mitigationId } = await db('response')
-      .select(
-        'mitigation_type as mitigationType',
-        'mitigation_id as mitigationId',
-      )
+    const { mitigationId } = await db('response')
+      .select('mitigation_id as mitigationId')
       .where({ id: 'RP2' })
       .first();
 
@@ -80,13 +95,10 @@ describe('Make Responses', () => {
       injectionId: 'I2',
     });
 
-    expect(
-      mitigations.find(
-        (mitigation) =>
-          mitigation.mitigation_id === mitigationId &&
-          mitigation.location === mitigationType,
-      ).state,
-    ).toBe(true);
+    const updated = mitigations.find((m) => m.mitigation_id === mitigationId);
+
+    expect(updated).toBeTruthy();
+    expect(updated.state).toBe(true);
   });
 
   test('should restore systems', async () => {
@@ -96,7 +108,7 @@ describe('Make Responses', () => {
       .first();
 
     await db('game_mitigation')
-      .where({ game_id: dummyGame.id, mitigation_id: 'M1', location: 'local' })
+      .where({ game_id: dummyGame.id, mitigation_id: 'M1' })
       .update({ state: true });
 
     await db('game_system')
@@ -115,13 +127,13 @@ describe('Make Responses', () => {
   });
 
   test('should update prevented injections based on follow up', async () => {
-    const { followupInjecion } = await db('injection')
-      .select('followup_injecion as followupInjecion')
+    const { followupInjection } = await db('injection')
+      .select('followup_injection as followupInjection')
       .where({ id: 'I1' })
       .first();
 
     await db('game_mitigation')
-      .where({ game_id: dummyGame.id, mitigation_id: 'M1', location: 'local' })
+      .where({ game_id: dummyGame.id, mitigation_id: 'M1' })
       .update({ state: true });
 
     await makeResponses({
@@ -135,7 +147,7 @@ describe('Make Responses', () => {
       .where({
         prevented: true,
         game_id: dummyGame.id,
-        injection_id: followupInjecion,
+        injection_id: followupInjection,
       })
       .first();
 
@@ -143,8 +155,8 @@ describe('Make Responses', () => {
   });
 
   test('should update prevented injections based on follow up when response is custom correct', async () => {
-    const { followupInjecion } = await db('injection')
-      .select('followup_injecion as followupInjecion')
+    const { followupInjection } = await db('injection')
+      .select('followup_injection as followupInjection')
       .where({ id: 'I1' })
       .first();
 
@@ -159,7 +171,7 @@ describe('Make Responses', () => {
       .where({
         prevented: true,
         game_id: dummyGame.id,
-        injection_id: followupInjecion,
+        injection_id: followupInjection,
       })
       .first();
 
@@ -223,7 +235,7 @@ describe('Make Responses', () => {
 
   test('should log on system restore action', async () => {
     await db('game_mitigation')
-      .where({ game_id: dummyGame.id, mitigation_id: 'M1', location: 'local' })
+      .where({ game_id: dummyGame.id, mitigation_id: 'M1' })
       .update({ state: true });
 
     await makeResponses({
