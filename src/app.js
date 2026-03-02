@@ -55,8 +55,51 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// STATIC DB data is exposed via REST api
+app.get('/health/airtable', async (req, res) => {
+  try {
+    const token = process.env.AIRTABLE_ACCESS_TOKEN;
+    const baseId = process.env.AIRTABLE_BASE_ID;
 
+    if (!token || !baseId) {
+      return res.status(500).json({
+        ok: false,
+        message: 'Missing AIRTABLE_ACCESS_TOKEN or AIRTABLE_BASE_ID',
+      });
+    }
+
+    const url = `https://api.airtable.com/v0/meta/bases/${baseId}/tables`;
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const body = await response.json();
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        ok: false,
+        message: 'Airtable meta API check failed',
+        status: response.status,
+        error: body?.error,
+      });
+    }
+
+    return res.json({
+      ok: true,
+      baseId,
+      tables: (body?.tables || []).map((t) => ({
+        id: t.id,
+        name: t.name,
+      })),
+    });
+  } catch (err) {
+    return res.status(500).json({
+      ok: false,
+      message: err?.message || 'Unexpected error',
+    });
+  }
+});
+
+// STATIC DB data is exposed via REST api
 app.get('/mitigations', async (req, res) => {
   const records = await db('mitigation');
   res.json(records);
@@ -99,51 +142,59 @@ app.get('/curveballs', async (req, res) => {
 
 app.post('/migrate', async (req, res) => {
   const { password } = req.body;
-  if (password === config.migrationPassword) {
-    try {
-      await migrate(
-        process.env.AIRTABLE_ACCESS_TOKEN,
-        process.env.AIRTABLE_BASE_ID,
-      );
-      res.send();
-    } catch (err) {
-      if (err.error === 'AUTHENTICATION_REQUIRED') {
-        res.status(400).send({
-          accessToken: 'Invalid airtable access token',
-        });
-      } else if (err.error === 'NOT_FOUND') {
-        res.status(400).send({
-          tableId: 'Invalid airtable base id',
-        });
-      } else if (err.validation) {
-        const errors = transformValidationErrors(err);
-        res.status(400).send({
-          validation: true,
-          message: err.message,
-          errors,
-        });
-      } else if (err.error === 'NOT_AUTHORIZED') {
-        res.status(400).send({
-          validation: true, // Set this to "true" to show it in an alert box on the frontend.
-          message: err.message,
-          errors: [
-            {
-              message: `An authorization error has occurred! Please make sure that the base ID and the required personal access token scope settings are correct!`,
-            },
-          ],
-        });
-      } else {
-        console.log(500);
-        res.status(500).send({
-          message:
-            'There was an internal server error during the migration! Please contact the developers to fix it.',
-        });
-      }
-      logger.error(err);
+
+  if (password !== config.migrationPassword) {
+    return res.status(400).json({ password: 'Invalid master password' });
+  }
+
+  const accessToken = process.env.AIRTABLE_ACCESS_TOKEN;
+  const baseId = process.env.AIRTABLE_BASE_ID;
+
+  if (!accessToken || !baseId) {
+    return res.status(500).send({
+      message:
+        'Server is missing Airtable configuration (AIRTABLE_ACCESS_TOKEN / AIRTABLE_BASE_ID).',
+    });
+  }
+
+  try {
+    await migrate(accessToken, baseId);
+    return res.send();
+  } catch (err) {
+    if (err.error === 'AUTHENTICATION_REQUIRED') {
+      return res.status(400).send({
+        message: 'Invalid Airtable access token (server configuration).',
+      });
     }
-  } else {
-    res.status(400).json({
-      password: 'Invalid master password',
+
+    if (err.error === 'NOT_FOUND') {
+      return res.status(400).send({
+        message: 'Invalid Airtable base id (server configuration).',
+      });
+    }
+
+    if (err.error === 'NOT_AUTHORIZED') {
+      return res.status(400).send({
+        validation: true,
+        message:
+          'Airtable authorization error. Check the base access and token scopes (data.records:read, schema.bases:read).',
+        errors: [{ message: 'Token does not have access to this base or lacks required scopes.' }],
+      });
+    }
+
+    if (err.validation) {
+      const errors = transformValidationErrors(err);
+      return res.status(400).send({
+        validation: true,
+        message: err.message,
+        errors,
+      });
+    }
+
+    logger.error(err);
+    return res.status(500).send({
+      message:
+        'There was an internal server error during the migration! Please contact the developers to fix it.',
     });
   }
 });
