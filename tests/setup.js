@@ -5,6 +5,8 @@ if (!process.env.DB_URL || !process.env.DB_URL.includes('cybersim_test')) {
 }
 
 const db = require('../src/models/db');
+const resetAllTables = require('./resetAllTables');
+
 
 const testSeed = async () => {
   // INJECTIONS
@@ -60,20 +62,25 @@ const testSeed = async () => {
     {
       id: 'M1',
       description: 'Mitigation 1',
+      category: 'Operation',
+      cost: 1000,
+
+      // keep legacy fields if they still exist in schema
       is_hq: true,
       is_local: true,
       hq_cost: 500,
       local_cost: 1000,
-      category: 'Operation',
     },
     {
       id: 'M2',
       description: 'Mitigation 2',
+      category: 'Operation',
+      cost: 1200,
+
       is_hq: false,
       is_local: true,
       hq_cost: null,
       local_cost: 1200,
-      category: 'Operation',
     },
   ]);
   // RESPONSES
@@ -93,7 +100,7 @@ const testSeed = async () => {
     {
       id: 'RP2',
       description: 'Change office lock at LB',
-      cost: null,
+      cost: 0,
       location: 'local',
       mitigation_type: 'local',
       mitigation_id: 'M2',
@@ -185,6 +192,10 @@ const testSeed = async () => {
 module.exports = async () => {
   await db.migrate.rollback({}, true);
   await db.migrate.latest();
+
+  // NEW: wipe everything so the seed is deterministic
+  await resetAllTables();
+
   await testSeed();
   await db.destroy();
 };
