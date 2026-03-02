@@ -6,7 +6,7 @@
   "author": "Rolan Szoke (fwalkwithm@gmail.com)",
   "license": "ISC",
   "scripts": {
-    "dev": "LOG_LEVEL=info nodemon -r dotenv/config index.js",
+    "dev": "LOG_LEVEL=info nodemon --watch .env -r dotenv/config index.js",
     "start": "node -r dotenv/config index.js",
     "start:prod": "NODE_ENV=production node -r dotenv/config index.js",
     "migrate": "knex migrate:latest",
