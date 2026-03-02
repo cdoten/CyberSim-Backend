@@ -12,7 +12,7 @@
     "poll_change": null,
     "systems_to_disable": [],
     "skipper_mitigation": null,
-    "followup_injecion": "I33"
+    "followup_injection": "I33"
   },
   {
     "id": "I2",
@@ -55,7 +55,7 @@
     "poll_change": null,
     "systems_to_disable": [],
     "skipper_mitigation": null,
-    "followup_injecion": "I27"
+    "followup_injection": "I27"
   },
   {
     "id": "I5",
@@ -70,7 +70,7 @@
     "poll_change": null,
     "systems_to_disable": [],
     "skipper_mitigation": null,
-    "followup_injecion": "I59"
+    "followup_injection": "I59"
   },
   {
     "id": "I6",
@@ -99,7 +99,7 @@
     "systems_to_disable": [],
     "skipper_mitigation": "M14",
     "skipper_mitigation_type": "hq",
-    "followup_injecion": "I23"
+    "followup_injection": "I23"
   },
   {
     "id": "I8",
@@ -115,7 +115,7 @@
     "systems_to_disable": [],
     "skipper_mitigation": "M14",
     "skipper_mitigation_type": "hq",
-    "followup_injecion": "I24"
+    "followup_injection": "I24"
   },
   {
     "id": "I9",
@@ -130,7 +130,7 @@
     "poll_change": null,
     "systems_to_disable": [],
     "skipper_mitigation": null,
-    "followup_injecion": "I20"
+    "followup_injection": "I20"
   },
   {
     "id": "I10",
@@ -173,7 +173,7 @@
     "poll_change": null,
     "systems_to_disable": [],
     "skipper_mitigation": null,
-    "followup_injecion": "I14"
+    "followup_injection": "I14"
   },
   {
     "id": "I13",
@@ -188,7 +188,7 @@
     "poll_change": null,
     "systems_to_disable": [],
     "skipper_mitigation": null,
-    "followup_injecion": "I50"
+    "followup_injection": "I50"
   },
   {
     "id": "I14",
@@ -231,7 +231,7 @@
     "poll_change": null,
     "systems_to_disable": [],
     "skipper_mitigation": null,
-    "followup_injecion": "I25"
+    "followup_injection": "I25"
   },
   {
     "id": "I17",
@@ -259,7 +259,7 @@
     "poll_change": null,
     "systems_to_disable": [],
     "skipper_mitigation": null,
-    "followup_injecion": "I30"
+    "followup_injection": "I30"
   },
   {
     "id": "I19",
@@ -274,7 +274,7 @@
     "poll_change": null,
     "systems_to_disable": [],
     "skipper_mitigation": null,
-    "followup_injecion": "I31"
+    "followup_injection": "I31"
   },
   {
     "id": "I20",
@@ -319,7 +319,7 @@
     "poll_change": null,
     "systems_to_disable": [],
     "skipper_mitigation": null,
-    "followup_injecion": "I40"
+    "followup_injection": "I40"
   },
   {
     "id": "I23",
@@ -377,7 +377,7 @@
     "poll_change": null,
     "systems_to_disable": [],
     "skipper_mitigation": null,
-    "followup_injecion": "I51"
+    "followup_injection": "I51"
   },
   {
     "id": "I27",
@@ -490,7 +490,7 @@
     "poll_change": null,
     "systems_to_disable": [],
     "skipper_mitigation": null,
-    "followup_injecion": "I36"
+    "followup_injection": "I36"
   },
   {
     "id": "I35",

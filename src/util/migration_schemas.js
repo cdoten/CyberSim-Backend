@@ -112,7 +112,7 @@ const dbSchemas = {
     poll_change: yup.number().integer(),
     systems_to_disable: multiRef,
     skipper_mitigation: yup.string(),
-    followup_injecion: yup.string(),
+    followup_injection: yup.string(),
     asset_code: yup.string(),
   }),
   mitigation: yup.object({

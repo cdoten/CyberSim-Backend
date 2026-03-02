@@ -8,6 +8,12 @@ const {
   dummyGameInjections,
 } = require('../testData');
 
+const sortByMitigationId = (arr) => {
+  const copy = [...arr];
+  copy.sort((a, b) => a.mitigation_id.localeCompare(b.mitigation_id));
+  return copy;
+};
+
 describe('Create Game', () => {
   beforeEach(async () => {
     await resetGameTables();
@@ -22,8 +28,13 @@ describe('Create Game', () => {
 
   test('should create required game tables', async () => {
     const game = await createGame(gameId);
+
     expect(game).toMatchObject(dummyGame);
-    expect(game.mitigations).toMatchObject(dummyGameMitigations);
+
+    expect(sortByMitigationId(game.mitigations)).toMatchObject(
+      sortByMitigationId(dummyGameMitigations),
+    );
+
     expect(game.systems).toMatchObject(dummyGameSystems);
     expect(game.injections).toMatchObject(dummyGameInjections);
     expect(game.logs).toBeNull();

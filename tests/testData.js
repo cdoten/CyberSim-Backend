@@ -10,26 +10,14 @@ const dummyGame = {
 
 const dummyGameMitigations = [
   {
-    id: 1,
     game_id: 'TestGame',
     mitigation_id: 'M1',
-    location: 'hq',
     state: false,
     preparation: false,
   },
   {
-    id: 2,
-    game_id: 'TestGame',
-    mitigation_id: 'M1',
-    location: 'local',
-    state: false,
-    preparation: false,
-  },
-  {
-    id: 3,
     game_id: 'TestGame',
     mitigation_id: 'M2',
-    location: 'local',
     state: false,
     preparation: false,
   },

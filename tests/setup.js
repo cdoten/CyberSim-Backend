@@ -23,7 +23,7 @@ const testSeed = async () => {
       systems_to_disable: ['S1'],
       skipper_mitigation: 'M1',
       recommendations: 'Placeholder recommendation 1',
-      followup_injecion: 'I2',
+      followup_injection: 'I2',
     },
     {
       id: 'I2',

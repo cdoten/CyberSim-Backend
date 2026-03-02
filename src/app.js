@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const expressPino = require('express-pino-logger');
 
+const crypto = require('crypto');
 const logger = require('./logger');
 const db = require('./models/db');
 const { getResponses } = require('./models/response');
@@ -23,6 +24,12 @@ app.use(
   }),
 );
 app.use(bodyParser.json());
+
+app.use((req, res, next) => {
+  req.id = crypto.randomUUID();
+  res.setHeader('x-request-id', req.id);
+  next();
+});
 
 app.get('/', async (req, res) => {
   try {
@@ -91,10 +98,13 @@ app.get('/curveballs', async (req, res) => {
 });
 
 app.post('/migrate', async (req, res) => {
-  const { password, accessToken, tableId } = req.body;
+  const { password } = req.body;
   if (password === config.migrationPassword) {
     try {
-      await migrate(accessToken, tableId);
+      await migrate(
+        process.env.AIRTABLE_ACCESS_TOKEN,
+        process.env.AIRTABLE_BASE_ID,
+      );
       res.send();
     } catch (err) {
       if (err.error === 'AUTHENTICATION_REQUIRED') {
@@ -136,6 +146,27 @@ app.post('/migrate', async (req, res) => {
       password: 'Invalid master password',
     });
   }
+});
+
+// Final error handler (must be after routes)
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  const status = err.statusCode || 500;
+
+  // Always log full details + stack
+  logger.error({
+    msg: 'Unhandled error',
+    status,
+    method: req.method,
+    path: req.originalUrl,
+    err: err?.stack || err,
+  });
+
+  // Client-safe response
+  res.status(status).json({
+    error: err.code || 'INTERNAL_ERROR',
+    message: status < 500 ? err.message : 'Server error',
+  });
 });
 
 module.exports = app;

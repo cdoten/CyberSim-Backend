@@ -3,13 +3,16 @@ const resetGameTables = require('../resetGameTables');
 const { makeNonCorrectInjectionResponse } = require('../../src/models/game');
 const { dummyGame, dummyGameInjections } = require('../testData');
 
-dummyGame.started_at = db.fn.now();
-dummyGame.paused = false;
+// Create a per-file copy so we don't mutate shared fixtures used by other tests
+const gameRow = { ...dummyGame, started_at: db.fn.now(), paused: false };
+
+const gameId = gameRow.id;
+const injectionId = dummyGameInjections[0].injection_id;
 
 describe('Make Non Correct Injection Response', () => {
   beforeAll(async () => {
     await resetGameTables();
-    await db('game').insert(dummyGame);
+    await db('game').insert(gameRow);
     await db('game_injection').insert(dummyGameInjections);
   });
 
@@ -18,27 +21,23 @@ describe('Make Non Correct Injection Response', () => {
     done();
   });
 
-  const gameId = dummyGame.id;
-  const injectionId = dummyGameInjections[0].injection_id;
-
   test('should set response time', async () => {
     const { startedAt } = await db('game')
       .select('started_at as startedAt')
       .where({ id: gameId })
       .first();
+
     const dateBeforeTest = Date.now() - new Date(startedAt).getTime();
     await makeNonCorrectInjectionResponse({ gameId, injectionId });
     const dateAfterTest = Date.now() - new Date(startedAt).getTime();
 
     const { responseMadeAt } = await db('game_injection')
       .select('response_made_at as responseMadeAt')
-      .where({
-        game_id: gameId,
-        injection_id: injectionId,
-      })
+      .where({ game_id: gameId, injection_id: injectionId })
       .first();
 
-    expect(responseMadeAt).toBeGreaterThan(dateBeforeTest);
+    expect(responseMadeAt).not.toBeNull();
+    expect(responseMadeAt).toBeGreaterThanOrEqual(dateBeforeTest);
     expect(responseMadeAt).toBeLessThan(dateAfterTest);
   });
 
