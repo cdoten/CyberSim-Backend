@@ -4,6 +4,7 @@ const Airtable = require('airtable');
 const yup = require('yup');
 const { dbSchemas, airtableSchemas } = require('./migration_schemas');
 const db = require('../models/db');
+const logger = require('../logger');
 const { throwNecessaryValidationErrors } = require('./errors');
 
 const typeMap = {
@@ -59,11 +60,6 @@ function fetchTable(base, tableName) {
 
 async function validateForDb(tableName, items) {
   return validate(dbSchemas[tableName], items, tableName);
-}
-
-
-async function saveToDb(tableName, items) {
-  await db(tableName).insert(items);
 }
 
 function addPartyLocation(locations) {
@@ -258,25 +254,30 @@ async function migrate(accessToken, baseId) {
     sqlActionRole,
   ] = validatedSqlTables.map((table) => table.value);
 
-  await saveToDb('location', sqlLocations);
-  await saveToDb('dictionary', sqlDictionary);
-  await saveToDb('injection', sqlInjections);
-  await saveToDb('mitigation', sqlMitigations);
-  await saveToDb('response', sqlResponses);
-  await saveToDb('system', sqlSystems);
-  await saveToDb('role', sqlRoles);
-  await saveToDb('action', sqlActions);
-  await saveToDb('curveball', sqlCurveballs);
-  await saveToDb('injection_response', sqlInjectionResponse);
-  await saveToDb('action_role', sqlActionRole);
+  await db.transaction(async (trx) => {
+    await trx('location').insert(sqlLocations);
+    await trx('dictionary').insert(sqlDictionary);
+    await trx('injection').insert(sqlInjections);
+    await trx('mitigation').insert(sqlMitigations);
+    await trx('response').insert(sqlResponses);
+    await trx('system').insert(sqlSystems);
+    await trx('role').insert(sqlRoles);
+    await trx('action').insert(sqlActions);
+    await trx('curveball').insert(sqlCurveballs);
+    await trx('injection_response').insert(sqlInjectionResponse);
+    await trx('action_role').insert(sqlActionRole);
+  });
 
   // Write out information about the updates
-  logger.info({
-    mitigationCount: sqlMitigations.length,
-    responseCount: sqlResponses.length,
-    injectionCount: sqlInjections.length,
-  }, 'Migration inserted row counts');
-
+ logger.info(
+    {
+      baseId: process.env.AIRTABLE_BASE_ID,
+      mitigationCount: sqlMitigations.length,
+      responseCount: sqlResponses.length,
+      injectionCount: sqlInjections.length,
+    },
+    'Migration inserted row counts',
+  );
 }
 
 module.exports = migrate;

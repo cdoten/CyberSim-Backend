@@ -1,3 +1,3 @@
-const injection = require('./v0/1_injection.json');
+const injection = require('../v0/1_injection.json');
 
 exports.seed = (knex) => knex('injection').insert(injection);

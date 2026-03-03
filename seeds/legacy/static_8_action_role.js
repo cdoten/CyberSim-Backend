@@ -1,3 +1,3 @@
-const actionRole = require('./v0/8_action_role.json');
+const actionRole = require('../v0/8_action_role.json');
 
 exports.seed = (knex) => knex('action_role').insert(actionRole);
