@@ -269,7 +269,7 @@ async function migrate(accessToken, baseId) {
   });
 
   // Write out information about the updates
- logger.info(
+  logger.info(
     {
       baseId: process.env.AIRTABLE_BASE_ID,
       mitigationCount: sqlMitigations.length,

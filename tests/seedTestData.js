@@ -3,7 +3,6 @@ module.exports = async function seedTestData(db) {
   // IMPORTANT: delete in FK-safe order if you keep deletes here.
   // If you're already calling resetAllTables(), you can omit these del() calls.
 
-
   // SYSTEMS
   await db('system').insert([
     { id: 'S1', name: 'Party website', description: '', type: 'party' },
@@ -61,61 +60,60 @@ module.exports = async function seedTestData(db) {
 
   // INJECTIONS (two-pass insert so followup_injection FK is always safe)
 
-// 1) Insert all injections with followup_injection = null
-await db('injection').insert([
-  {
-    id: 'I1',
-    title: 'Injection 1',
-    description: 'Injection 1',
-    trigger_time: 120000,
-    location: 'local',
-    type: 'Table',
-    recipient_role: 'LB role',
-    asset_code: '1',
-    poll_change: -0.5,
-    systems_to_disable: ['S1'],
-    skipper_mitigation: 'M1',
-    recommendations: 'Placeholder recommendation 1',
-    followup_injection: null,
-  },
-  {
-    id: 'I2',
-    title: 'Injection 2',
-    description: 'Injection 2',
-    trigger_time: 240000,
-    location: 'hq',
-    type: 'Table',
-    recipient_role: 'Hq role',
-    asset_code: '2',
-    poll_change: -0.5,
-    systems_to_disable: [],
-    skipper_mitigation: null,
-    recommendations: 'Placeholder recommendation 2',
-    followup_injection: null,
-  },
-  {
-    id: 'I3',
-    title: 'Injection 3',
-    description: 'Injection 3',
-    trigger_time: 340000,
-    location: 'hq',
-    type: 'Table',
-    recipient_role: 'Hq role',
-    asset_code: '3',
-    poll_change: null,
-    systems_to_disable: [],
-    skipper_mitigation: 'M2',
-    recommendations: 'Placeholder recommendation 3',
-    followup_injection: null,
-  },
-]);
+  // 1) Insert all injections with followup_injection = null
+  await db('injection').insert([
+    {
+      id: 'I1',
+      title: 'Injection 1',
+      description: 'Injection 1',
+      trigger_time: 120000,
+      location: 'local',
+      type: 'Table',
+      recipient_role: 'LB role',
+      asset_code: '1',
+      poll_change: -0.5,
+      systems_to_disable: ['S1'],
+      skipper_mitigation: 'M1',
+      recommendations: 'Placeholder recommendation 1',
+      followup_injection: null,
+    },
+    {
+      id: 'I2',
+      title: 'Injection 2',
+      description: 'Injection 2',
+      trigger_time: 240000,
+      location: 'hq',
+      type: 'Table',
+      recipient_role: 'Hq role',
+      asset_code: '2',
+      poll_change: -0.5,
+      systems_to_disable: [],
+      skipper_mitigation: null,
+      recommendations: 'Placeholder recommendation 2',
+      followup_injection: null,
+    },
+    {
+      id: 'I3',
+      title: 'Injection 3',
+      description: 'Injection 3',
+      trigger_time: 340000,
+      location: 'hq',
+      type: 'Table',
+      recipient_role: 'Hq role',
+      asset_code: '3',
+      poll_change: null,
+      systems_to_disable: [],
+      skipper_mitigation: 'M2',
+      recommendations: 'Placeholder recommendation 3',
+      followup_injection: null,
+    },
+  ]);
 
-// 2) Update the follow-up link after both rows exist
-await db('injection')
-  .where({ id: 'I1' })
-  .update({ followup_injection: 'I2' });
-  
-  
+  // 2) Update the follow-up link after both rows exist
+  await db('injection')
+    .where({ id: 'I1' })
+    .update({ followup_injection: 'I2' });
+
   // INJECTION_RESPONSE (join table)
   await db('injection_response').insert([
     { response_id: 'RP1', injection_id: 'I1' },
