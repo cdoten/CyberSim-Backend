@@ -2,8 +2,14 @@
 
 exports.up = async (knex) => {
   // --- MITIGATION: remove legacy split-cost columns ---
-  const mitigationHasHqCost = await knex.schema.hasColumn('mitigation', 'hq_cost');
-  const mitigationHasLocalCost = await knex.schema.hasColumn('mitigation', 'local_cost');
+  const mitigationHasHqCost = await knex.schema.hasColumn(
+    'mitigation',
+    'hq_cost',
+  );
+  const mitigationHasLocalCost = await knex.schema.hasColumn(
+    'mitigation',
+    'local_cost',
+  );
 
   if (mitigationHasHqCost || mitigationHasLocalCost) {
     await knex.schema.alterTable('mitigation', (tbl) => {
@@ -17,8 +23,14 @@ exports.up = async (knex) => {
   }
 
   // --- RESPONSE: remove unused legacy columns ---
-  const responseHasLocation = await knex.schema.hasColumn('response', 'location');
-  const responseHasMitigationType = await knex.schema.hasColumn('response', 'mitigation_type');
+  const responseHasLocation = await knex.schema.hasColumn(
+    'response',
+    'location',
+  );
+  const responseHasMitigationType = await knex.schema.hasColumn(
+    'response',
+    'mitigation_type',
+  );
 
   if (responseHasLocation || responseHasMitigationType) {
     await knex.schema.alterTable('response', (tbl) => {
@@ -47,8 +59,14 @@ exports.up = async (knex) => {
 exports.down = async (knex) => {
   // Re-add columns as nullable (for reversibility)
 
-  const mitigationHasHqCost = await knex.schema.hasColumn('mitigation', 'hq_cost');
-  const mitigationHasLocalCost = await knex.schema.hasColumn('mitigation', 'local_cost');
+  const mitigationHasHqCost = await knex.schema.hasColumn(
+    'mitigation',
+    'hq_cost',
+  );
+  const mitigationHasLocalCost = await knex.schema.hasColumn(
+    'mitigation',
+    'local_cost',
+  );
 
   if (!mitigationHasHqCost || !mitigationHasLocalCost) {
     await knex.schema.alterTable('mitigation', (tbl) => {
@@ -61,8 +79,14 @@ exports.down = async (knex) => {
     });
   }
 
-  const responseHasLocation = await knex.schema.hasColumn('response', 'location');
-  const responseHasMitigationType = await knex.schema.hasColumn('response', 'mitigation_type');
+  const responseHasLocation = await knex.schema.hasColumn(
+    'response',
+    'location',
+  );
+  const responseHasMitigationType = await knex.schema.hasColumn(
+    'response',
+    'mitigation_type',
+  );
 
   if (!responseHasLocation || !responseHasMitigationType) {
     await knex.schema.alterTable('response', (tbl) => {

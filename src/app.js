@@ -109,9 +109,7 @@ app.get('/health/db', async (req, res) => {
     // knex raw returns slightly different shapes depending on driver;
     // for pg it’s usually { rows: [...] }
     const ok =
-      result?.rows?.[0]?.ok === 1 ||
-      result?.rows?.[0]?.ok === '1' ||
-      true;
+      result?.rows?.[0]?.ok === 1 || result?.rows?.[0]?.ok === '1' || true;
 
     return res.json({
       ok,

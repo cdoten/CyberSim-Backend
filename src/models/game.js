@@ -52,9 +52,7 @@ const createGame = async (
     ['id'],
   );
 
-  const systems = await db('system')
-    .select('id')
-    .orderBy('id');
+  const systems = await db('system').select('id').orderBy('id');
 
   await db('game_system').insert(
     systems.map(({ id: systemId }) => ({
@@ -64,9 +62,7 @@ const createGame = async (
     })),
   );
 
-  const mitigations = await db('mitigation')
-    .select('id')
-    .orderBy('id');
+  const mitigations = await db('mitigation').select('id').orderBy('id');
 
   await db('game_mitigation').insert(
     mitigations.map(({ id: mitigationId }) => ({
@@ -76,9 +72,7 @@ const createGame = async (
     })),
   );
 
-  const injections = await db('injection')
-    .select('id')
-    .orderBy('id');
+  const injections = await db('injection').select('id').orderBy('id');
 
   await db('game_injection').insert(
     injections.map(({ id: injectionId }) => ({
