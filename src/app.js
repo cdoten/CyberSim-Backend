@@ -99,6 +99,33 @@ app.get('/health/airtable', async (req, res) => {
   }
 });
 
+// health: database connectivity check
+app.get('/health/db', async (req, res) => {
+  try {
+    // db is your knex instance from src/models/db
+    // If you already have it in this file, reuse it.
+    const result = await db.raw('select 1 as ok');
+
+    // knex raw returns slightly different shapes depending on driver;
+    // for pg it’s usually { rows: [...] }
+    const ok =
+      result?.rows?.[0]?.ok === 1 ||
+      result?.rows?.[0]?.ok === '1' ||
+      true;
+
+    return res.json({
+      ok,
+      message: 'Database reachable',
+    });
+  } catch (err) {
+    return res.status(500).json({
+      ok: false,
+      message: 'Database not reachable',
+      error: err?.message,
+    });
+  }
+});
+
 // STATIC DB data is exposed via REST api
 app.get('/mitigations', async (req, res) => {
   const records = await db('mitigation');
@@ -145,8 +172,8 @@ app.post('/migrate', async (req, res) => {
 
   // Ensure there is in fact some password set.
   const configuredPassword = config.migrationPassword;
-  if (!configuredPassword) {
-    return res.status(500).send({ message: 'Migration password is not configured on the server.' });
+  if (!config.migrationPassword) {
+    return res.status(500).send({ message: 'Migration disabled.' });
   }
 
   if (password !== configuredPassword) {

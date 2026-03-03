@@ -124,7 +124,7 @@ const dbSchemas = {
   response: yup.object({
     id,
     description: yup.string().required(),
-    cost: yup.number().min(0).required(),    
+    cost: yup.number().min(0).required(),
     mitigation_id: yup.string(),
     systems_to_restore: multiRef,
     required_mitigation: yup.string(),
