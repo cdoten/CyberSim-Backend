@@ -1,0 +1,27 @@
+{
+  "tag": "cso@2026-03-03.1",
+  "scenario": "cso",
+  "revision": "2026-03-03.1",
+  "exported_at": "2026-03-04T02:42:22.279Z",
+  "airtable": {
+    "base_id": "appyBBuEsmdRZfnlA"
+  },
+  "db": {
+    "latest_migration": "20260303000100_cleanup_legacy_columns.js"
+  },
+  "git": {
+    "commit": "f46b75738437402d3b9ae348ad5806d15be6c9ca"
+  },
+  "counts": {
+    "system": 8,
+    "role": 10,
+    "mitigation": 25,
+    "response": 52,
+    "injection": 44,
+    "action": 18,
+    "curveball": 10,
+    "action_role": 18,
+    "injection_response": 37,
+    "dictionary": 2
+  }
+}

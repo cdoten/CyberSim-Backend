@@ -1,0 +1,221 @@
+[
+  {
+    "id": "rec8TvKjfQuWmVZWN",
+    "description": "Hold conference for CSO leaders",
+    "type": "hq",
+    "cost": 1000,
+    "budget_increase": 0,
+    "poll_increase": 5,
+    "required_systems": [
+      "recfoNj0Yu8800LSS",
+      "recDDBwyEgTHiwTjA",
+      "recGUfJEcYPqk9SsC",
+      "recf8q03JEA01WQoc",
+      "recEQ0O2IJ7pOzNIp",
+      "rec27VnjYPmpReWfJ",
+      "rec2GzCYRmcEnJXI1"
+    ]
+  },
+  {
+    "id": "reca5KmG4oHvL3Etn",
+    "description": "Send update newsletter to supporters",
+    "type": "hq",
+    "cost": 0,
+    "budget_increase": 300,
+    "poll_increase": 0,
+    "required_systems": [
+      "recfoNj0Yu8800LSS"
+    ]
+  },
+  {
+    "id": "recAEfF62wikPBTqS",
+    "description": "Design a local GOTV activity",
+    "type": "local",
+    "cost": 600,
+    "budget_increase": 0,
+    "poll_increase": 3,
+    "required_systems": [
+      "recDDBwyEgTHiwTjA",
+      "recf8q03JEA01WQoc"
+    ]
+  },
+  {
+    "id": "recbItvAwgKf3I0xx",
+    "description": "Share crowdfunding facebook posts via computers",
+    "type": "local",
+    "cost": 0,
+    "budget_increase": 300,
+    "poll_increase": 0,
+    "required_systems": [
+      "rec2GzCYRmcEnJXI1",
+      "recDDBwyEgTHiwTjA"
+    ]
+  },
+  {
+    "id": "recclPV2HsQ9uK3tT",
+    "description": "Solicit donations via WhatsApp",
+    "type": "local",
+    "cost": 0,
+    "budget_increase": 400,
+    "poll_increase": 0,
+    "required_systems": [
+      "recf8q03JEA01WQoc"
+    ]
+  },
+  {
+    "id": "recdZFFrYIjoiOVoU",
+    "description": "Send fundraising email",
+    "type": "hq",
+    "cost": 0,
+    "budget_increase": 300,
+    "poll_increase": 0,
+    "required_systems": [
+      "recEQ0O2IJ7pOzNIp",
+      "recfoNj0Yu8800LSS"
+    ]
+  },
+  {
+    "id": "recEMGnp6M1h4fTnH",
+    "description": "Organize webinar via phones",
+    "type": "local",
+    "cost": 0,
+    "budget_increase": 300,
+    "poll_increase": 0,
+    "required_systems": [
+      "recEQ0O2IJ7pOzNIp",
+      "recf8q03JEA01WQoc"
+    ]
+  },
+  {
+    "id": "reclchWFwpAqZSLT1",
+    "description": "Send Facebook posts to solicit donations via phones",
+    "type": "hq",
+    "cost": 0,
+    "budget_increase": 400,
+    "poll_increase": 0,
+    "required_systems": [
+      "rec27VnjYPmpReWfJ",
+      "recGUfJEcYPqk9SsC"
+    ]
+  },
+  {
+    "id": "recUa8MgTtfnu9Cvp",
+    "description": "Write funding proposal for int'l donor",
+    "type": "hq",
+    "cost": 0,
+    "budget_increase": 400,
+    "poll_increase": 0,
+    "required_systems": [
+      "recEQ0O2IJ7pOzNIp",
+      "recGUfJEcYPqk9SsC"
+    ]
+  },
+  {
+    "id": "recurpvk2JC7MiZyx",
+    "description": "Host event with celebrity",
+    "type": "hq",
+    "cost": 600,
+    "budget_increase": 0,
+    "poll_increase": 3,
+    "required_systems": [
+      "recfoNj0Yu8800LSS",
+      "recEQ0O2IJ7pOzNIp",
+      "recGUfJEcYPqk9SsC"
+    ]
+  },
+  {
+    "id": "recVqVcM51nRAyJZF",
+    "description": "Redesign website",
+    "type": "hq",
+    "cost": 500,
+    "budget_increase": 0,
+    "poll_increase": 2,
+    "required_systems": [
+      "rec2uCcJcHAT7wJEX",
+      "recfoNj0Yu8800LSS"
+    ]
+  },
+  {
+    "id": "recVYqKo1gpGZkUsR",
+    "description": "Organize webinar via computers",
+    "type": "local",
+    "cost": 0,
+    "budget_increase": 300,
+    "poll_increase": 0,
+    "required_systems": [
+      "recDDBwyEgTHiwTjA",
+      "recEQ0O2IJ7pOzNIp"
+    ]
+  },
+  {
+    "id": "recwbj8SxvD891Oyh",
+    "description": "Share crowdfunding facebook posts via phones",
+    "type": "local",
+    "cost": 0,
+    "budget_increase": 300,
+    "poll_increase": 0,
+    "required_systems": [
+      "rec2GzCYRmcEnJXI1",
+      "recf8q03JEA01WQoc"
+    ]
+  },
+  {
+    "id": "recWyTejvHy5ddHLT",
+    "description": "Hold local town hall",
+    "type": "local",
+    "cost": 800,
+    "budget_increase": 0,
+    "poll_increase": 4,
+    "required_systems": [
+      "recDDBwyEgTHiwTjA",
+      "rec2GzCYRmcEnJXI1",
+      "recf8q03JEA01WQoc"
+    ]
+  },
+  {
+    "id": "recXrzG3BazqcC9P3",
+    "description": "Arrange director interview on TV",
+    "type": "hq",
+    "cost": 500,
+    "budget_increase": 0,
+    "poll_increase": 2,
+    "required_systems": [
+      "recGUfJEcYPqk9SsC"
+    ]
+  },
+  {
+    "id": "recyBHUx2j87dDf0D",
+    "description": "Send Facebook posts to solicit donations via computers",
+    "type": "hq",
+    "cost": 0,
+    "budget_increase": 400,
+    "poll_increase": 0,
+    "required_systems": [
+      "rec27VnjYPmpReWfJ",
+      "recfoNj0Yu8800LSS"
+    ]
+  },
+  {
+    "id": "recyMf8JiSCtiipEp",
+    "description": "Publish voting rights and democracy report",
+    "type": "hq",
+    "cost": 500,
+    "budget_increase": 0,
+    "poll_increase": 2,
+    "required_systems": [
+      "recfoNj0Yu8800LSS",
+      "rec2uCcJcHAT7wJEX"
+    ]
+  },
+  {
+    "id": "recZMhMHahfoztnhV",
+    "description": "Host local event to raise awareness",
+    "type": "local",
+    "cost": 500,
+    "budget_increase": 0,
+    "poll_increase": 2,
+    "required_systems": [
+      "recDDBwyEgTHiwTjA"
+    ]
+  }
+]

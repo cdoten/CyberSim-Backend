@@ -12,13 +12,19 @@
     "dev": "LOG_LEVEL=info nodemon --watch .env -r dotenv/config index.js",
     "start": "node -r dotenv/config index.js",
     "start:prod": "NODE_ENV=production node -r dotenv/config index.js",
-    "migrate": "knex migrate:latest",
-    "unmigrate": "knex migrate:rollback",
-    "seed": "knex seed:run",
-    "reset-db": "npm run unmigrate && npm run migrate && npm run seed",
+
     "lint": "eslint .",
+    "smoke": "bash scripts/smoke.sh",
     "test": "cross-env DOTENV_CONFIG_PATH=.env.test node -r dotenv/config ./node_modules/.bin/jest --runInBand",
-    "smoke": "bash scripts/smoke.sh"
+
+    "migrate": "knex migrate:latest",
+    "rollback": "knex migrate:rollback",
+    "reset:migrations": "knex migrate:rollback --all && knex migrate:latest",
+
+    "seed": "knex seed:run",
+    "reset-db": "npm run reset:migrations && npm run seed",
+
+    "dataset:export": "node -r dotenv/config scripts/exportDatasetFromAirtable.js"
   },
   "dependencies": {
     "@types/jest": "^26.0.8",
