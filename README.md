@@ -1,301 +1,248 @@
-# ndi-cybersim-api
+# CyberSim Backend API
 
-[Postgres docker image](https://hub.docker.com/_/postgres)
+This repository contains the backend API for CyberSim, a tabletop
+simulation platform designed to help organizations practice responding
+to complex digital crises.
 
-Start postgres docker: docker-compose up -d
+The backend manages game state, scenario data, database persistence, and
+Airtable imports.
 
-Stop postgres docker: docker-compose down
+For a high-level overview of CyberSim, see the CyberSim UI repository:
+https://github.com/`<ORG_OR_USER>`{=html}/CyberSim-UI
 
-Reset database (rollback migrations → migrate → seed fixture data):
+## Architecture
 
-npm run reset-db
+-   Runtime: Node.js
+-   Framework: Express
+-   Database: PostgreSQL
+-   Query Builder: Knex
+-   Containerized via Docker
+-   Designed for AWS Elastic Beanstalk deployment
 
-Database commands:
+## Requirements
 
-# Apply latest migrations
+-   Node.js (v22 recommended)
+-   Docker + Docker Compose (for local Postgres)
+-   PostgreSQL (production)
 
-npm run migrate
+## Local Development
 
-# Roll back the most recent migration
+### 1. Clone the repository
 
-npm run rollback
+    git clone <REPO_LINK>
+    cd CyberSim-Backend
 
-# Run seed scripts
+### 2. Install dependencies
 
-npm run seed
+    npm install
 
-Run tests:
+### 3. Create local environment file
 
-npm run test
+    cp .env.example .env
 
-Start API:
+Adjust values in `.env` as needed.
 
-npm run start
+### 4. Start local Postgres (Docker)
 
-------------------------------------------------------------------------
+This project uses a custom Docker Compose file for development:
 
-# Local Development Setup
+    docker compose -f docker-compose-dev.yaml up -d
 
-To set up the project on your local environment run the following
-commands:
+To stop containers:
 
-# Clone the project
+    docker compose -f docker-compose-dev.yaml down
+    
+### 5. Initialize database
 
-git clone `<REPO_LINK>`{=html}
+Reset database (rollback → migrate → seed fixture data):
 
-# Install dependencies
+    npm run reset-db
 
-npm install
+### 6. Start the API
 
-# Create local environment file
+    npm start
 
-cp .env.example .env
+API runs at:
 
-# Start Postgres and Adminer
+http://localhost:3001
 
-docker-compose up -d
+## Health Endpoints
 
-# Start the API on localhost:3001
+-   `GET /health` -- Application status\
+-   `GET /health/db` -- Database connectivity check\
+-   `GET /health/airtable` -- Airtable configuration check
 
-npm start
+These endpoints are useful during deployment and infrastructure
+validation.
 
-------------------------------------------------------------------------
+## Database & Seeding
 
-# Database Seeding
+The project supports two types of seed data.
 
-The project uses two different types of seed data.
+### Fixture Seed (Default)
 
-## Fixture Seed (default)
+    npm run reset-db
 
-When running:
+This will:
 
-npm run reset-db
+1.  Roll back migrations\
+2.  Apply latest migrations\
+3.  Load deterministic fixture data
 
-the database will be populated with a small deterministic fixture
-dataset used for development and automated tests.
+Used for local development and automated tests.\
+This dataset does not depend on Airtable.
 
-This dataset lives in the seed scripts and does not depend on Airtable.
+### Dataset Snapshots (Versioned Scenarios)
 
-------------------------------------------------------------------------
+Scenario datasets exported from Airtable can be stored under:
 
-## Dataset Seed (versioned scenarios)
-
-Full scenario datasets can be exported from Airtable and stored under:
-
-seeds/datasets/`<scenario>`{=html}/`<revision>`{=html}/
+    seeds/datasets/<scenario>/<revision>/
 
 Example:
 
-seeds/datasets/cso/2026-03-03.1/
+    seeds/datasets/cso/2026-03-03.1/
 
-To load a dataset snapshot:
+Load a dataset snapshot:
 
-SEED_TAG=cso@2026-03-03.1 npm run reset-db:dataset
+    SEED_TAG=cso@2026-03-03.1 npm run reset-db:dataset
 
-This will: 1. reset the database 2. apply migrations 3. load the
-selected dataset snapshot
+This will:
 
-------------------------------------------------------------------------
+1.  Reset the database\
+2.  Apply migrations\
+3.  Load the selected dataset snapshot
 
-# Scenario Import from Airtable
 
-The application stores game data in PostgreSQL, but the source content
-is maintained in Airtable.
+### Export Dataset Snapshot from Database
 
-To import the current Airtable data into the database:
+To export a versioned dataset snapshot from the application database into the repository:
 
-POST /scenario/import
-
-This endpoint:
-
-1.  connects to Airtable
-2.  reads the configured base
-3.  loads the data into PostgreSQL
-
-## Required Environment Variables
-
-AIRTABLE_ACCESS_TOKEN AIRTABLE_BASE_ID IMPORT_PASSWORD
-
-The request must include the configured IMPORT_PASSWORD.
-
-This process updates the database only and does not create dataset
-snapshots.
-
-------------------------------------------------------------------------
-
-# Dataset Export
-
-To export a versioned dataset snapshot from Airtable into the
-repository:
-
-npm run snapshot:export
+    npm run snapshot:export
 
 This writes a dataset to:
 
-seeds/datasets/`<scenario>`{=html}/`<revision>`{=html}/
+    seeds/datasets/<scenario>/<revision>/
 
-These snapshots can then be loaded later using the dataset seed system.
+### Individual Database Commands
 
-------------------------------------------------------------------------
+Apply latest migrations:
+    npm run migrate
 
-# Basic Source Code Overview
+Roll back the most recent migration:
+    npm run rollback
 
-For a more detailed explanation of the source code structure see the
-wiki:
+Run seed scripts:
+    npm run seed
 
-https://github.com/nditech/CyberSim-Backend/wiki
+## Scenario Import from Airtable
 
-------------------------------------------------------------------------
+The application stores game data in PostgreSQL, but source content is
+maintained in Airtable.
 
-# CyberSim Backend Deployment Guide
+To import current Airtable data into the database:
 
-The CyberSim Game comprises two distinct applications:
+    POST /scenario/import
 
--   Node.js backend API
--   React frontend UI
+### Required Environment Variables
 
-This guide covers deployment of the backend API.
+-   `AIRTABLE_ACCESS_TOKEN`
+-   `AIRTABLE_BASE_ID`
+-   `IMPORT_PASSWORD`
 
-Frontend deployment instructions are available here:
+The request must include the configured `IMPORT_PASSWORD`.
 
-https://github.com/nditech/CyberSim-UI#readme
-
-------------------------------------------------------------------------
-
-# Environment Component Naming Convention
-
-Environment component names follow the format:
-
-`<ACCOUNT_ALIAS>`{=html}@`<COMPONENT_NAME>`{=html}
-
-------------------------------------------------------------------------
-
-# GitHub Repository
-
-All local repository changes are pushed to branches in the GitHub
-repository.
-
-These changes are reviewed and merged into the master branch.
-
-Repository:
-
-https://github.com/nditech/CyberSim-Backend
-
-------------------------------------------------------------------------
-
-# CodePipeline
-
-Example:
-
-ndi@Cybersim-backend
-
-A separate CodePipeline project is created for each production
-environment.
-
-The pipeline consists of two stages.
-
-------------------------------------------------------------------------
-
-## SOURCE
-
-1.  Set the Source provider to GitHub (Version 2)
-2.  Connect to repository:
-
-nditech/CyberSim-Backend
-
-3.  Branch name should be:
-
-master
-
-4.  Enable automatic builds on push.
-
-------------------------------------------------------------------------
-
-## BUILD
-
-The build stage can be skipped.
-
-------------------------------------------------------------------------
-
-## DEPLOY
-
-Deploy using:
-
-AWS Elastic Beanstalk
-
-Select the Cybersim application and environment.
-
-------------------------------------------------------------------------
-
-# Elastic Beanstalk
-
-Example:
-
-ndi@Cybersimgame-env
-
-Each game instance runs in its own Elastic Beanstalk environment.
-
-The Node application runs inside a Docker container defined by the
-Dockerfile in the repository.
-
-Once deployment completes, the API becomes live.
-
-------------------------------------------------------------------------
+This process updates the database but does not create versioned dataset
+snapshots.
 
 ## Environment Variables
 
-Required variables:
+### Required (Production)
 
-PORT NODE_ENV DB_URL
+-   `PORT`
+-   `NODE_ENV`
+-   `DB_URL`
 
-Definitions:
+#### DB_URL format
 
-PORT --- must match the port exposed by the container (currently 8080).
+    postgres://<USER>:<PASSWORD>@<HOST>:<PORT>/<DB_NAME>
 
-NODE_ENV --- production \| development \| test
+#### NODE_ENV values
 
-DB_URL ---
-postgres://`<USERNAME>`{=html}:`<PASSWORD>`{=html}@`<HOST>`{=html}:`<PORT>`{=html}/`<DB_NAME>`{=html}
+-   `production`
+-   `development`
+-   `test`
 
-Optional variables:
+### Optional
 
-IMPORT_PASSWORD LOG_LEVEL
+-   `IMPORT_PASSWORD`
+-   `LOG_LEVEL`
 
-LOG_LEVEL values:
+#### LOG_LEVEL options
 
-fatal \| error \| warn \| info \| debug \| trace
+-   `fatal`
+-   `error`
+-   `warn`
+-   `info`
+-   `debug`
+-   `trace`
 
-------------------------------------------------------------------------
+## Deployment (AWS Elastic Beanstalk)
 
-# Airtable Handbook
+The application runs inside a Docker container defined by the
+`Dockerfile` in this repository.
 
-## Purchased Mitigations
+Recommended Elastic Beanstalk settings:
 
-Mitigations are grouped by category in Airtable.
+-   Environment tier: Web server
+-   Platform: Docker (Amazon Linux 2)
+-   Preset: Single instance
+-   Monitoring: Basic
 
-To adjust ordering:
+### Required Environment Variables
 
-1.  Open the purchase_mitigations table
-2.  Group by category
-3.  Reorder items within each category
+-   `PORT` (must match container exposed port; currently `8080`)
+-   `NODE_ENV=production`
+-   `DB_URL=<connection_string>`
 
-This ordering is reflected in the application.
+After deployment, validate:
 
-------------------------------------------------------------------------
+-   `/health`
+-   `/health/db`
+-   `/health/airtable`
 
-## Locations
+## Testing
 
-The game supports exactly two locations:
+Run automated tests:
 
-hq local
+    npm run test
 
-Do not modify the location_code values.
+## Project Structure
 
-Changing these values will break application logic.
+-   `/src` -- Application source code\
+-   `/migrations` -- Database schema migrations\
+-   `/seeds` -- Fixture data and dataset snapshots\
+-   `/docker-compose.yml` -- Local Postgres configuration\
+-   `/Dockerfile` -- Production container definition
 
-------------------------------------------------------------------------
+## Troubleshooting
 
-## Dictionary
+### Database connection issues
 
-The dictionary table allows you to customize terminology such as
-replacing the words "poll" or "budget".
+-   Verify `DB_URL`
+-   Confirm Postgres is running locally (`docker-compose ps`)
+-   Check security group rules in production
+
+### Port mismatch on Elastic Beanstalk
+
+Ensure:
+
+-   Container exposes port `8080`
+-   `PORT=8080` is set in EB environment variables
+
+## Credits
+
+CyberSim was originally developed by Rising Stack for the National
+Democratic Institute (NDI), with support from Microsoft and the National Endowment 
+for Democracy (NED), as part of broader efforts to strengthen civic resilience in the 
+digital age. We are grateful for further support from the National Civic 
+League and Aspen Institute.
