@@ -9,4 +9,12 @@ module.exports = {
         ? { rejectUnauthorized: false }
         : false,
   },
+
+  migrations: {
+    directory: './migrations',
+  },
+
+  seeds: {
+    directory: './seeds',
+  },
 };

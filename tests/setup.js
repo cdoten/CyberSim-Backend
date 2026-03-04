@@ -11,7 +11,29 @@ const db = require('../src/models/db');
 const resetAllTables = require('./resetAllTables');
 const seedTestData = require('./seedTestData');
 
+async function verifyDatabaseConnection(database) {
+  try {
+    await database.raw('select 1');
+  } catch (err) {
+    console.error('\n❌ Cannot connect to the test database.\n');
+
+    console.error('DB_URL:', process.env.DB_URL);
+
+    console.error('\nCommon causes:');
+    console.error('• Docker/Postgres container is not running');
+    console.error('• DB_URL host/port is wrong');
+    console.error('• Postgres not accepting connections\n');
+
+    console.error('Try starting the DB:');
+    console.error('  docker compose -f docker-compose-dev.yaml up -d db\n');
+
+    throw err;
+  }
+}
+
 module.exports = async () => {
+  await verifyDatabaseConnection(db);
+
   await db.migrate.rollback({}, true);
   await db.migrate.latest();
 

@@ -1,0 +1,72 @@
+[
+  {
+    "id": "recaj7Z1dXvcy13go",
+    "description": "plus 5 curveball",
+    "lose_all_budget": false,
+    "budget_change": 0,
+    "poll_change": 5
+  },
+  {
+    "id": "recB3qIYGDVnofoqL",
+    "description": "minus 500 curveball",
+    "lose_all_budget": false,
+    "budget_change": -500,
+    "poll_change": 0
+  },
+  {
+    "id": "recbiDSRqg07ZMAoT",
+    "description": "plus 1000 curveball",
+    "lose_all_budget": false,
+    "budget_change": 1000,
+    "poll_change": 0
+  },
+  {
+    "id": "recCsn8HMWGkmpRYH",
+    "description": "plus 100 curveball",
+    "lose_all_budget": false,
+    "budget_change": 100,
+    "poll_change": 0
+  },
+  {
+    "id": "recFANJablDLbBlVB",
+    "description": "minus 1 curveball",
+    "lose_all_budget": false,
+    "budget_change": 0,
+    "poll_change": -1
+  },
+  {
+    "id": "recgFFLKFZmudgZBB",
+    "description": "minus 100 curveball",
+    "lose_all_budget": false,
+    "budget_change": -100,
+    "poll_change": 0
+  },
+  {
+    "id": "recJw6xniKOCahQ5z",
+    "description": "plus 500 curveball",
+    "lose_all_budget": false,
+    "budget_change": 500,
+    "poll_change": 0
+  },
+  {
+    "id": "recuGqlbR0dQnZ5sV",
+    "description": "plus 1 curveball",
+    "lose_all_budget": false,
+    "budget_change": 0,
+    "poll_change": 1
+  },
+  {
+    "id": "recV8DbkGHSwEnzxE",
+    "description": "minus 1000 curveball",
+    "lose_all_budget": false,
+    "budget_change": -1000,
+    "poll_change": 0
+  },
+  {
+    "id": "recy2pmYs88xoVviw",
+    "description": "minus 5 curveball",
+    "lose_all_budget": false,
+    "budget_change": 0,
+    "poll_change": -5
+  }
+]

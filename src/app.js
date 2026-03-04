@@ -10,11 +10,14 @@ const db = require('./models/db');
 const { getResponses } = require('./models/response');
 const { getInjections } = require('./models/injection');
 const { getActions } = require('./models/action');
-const migrate = require('./util/migrate');
+const importScenarioFromAirtable = require('./util/importScenarioFromAirtable');
 const config = require('./config');
 const { transformValidationErrors } = require('./util/errors');
 
 const app = express();
+
+console.log('Loaded app.js commit:', process.env.GIT_COMMIT || 'unknown');
+console.log('Route enabled: POST /scenario/import');
 
 app.use(helmet());
 app.use(cors());
@@ -108,9 +111,7 @@ app.get('/health/db', async (req, res) => {
 
     // knex raw returns slightly different shapes depending on driver;
     // for pg it’s usually { rows: [...] }
-    const ok =
-      result?.rows?.[0]?.ok === 1 || result?.rows?.[0]?.ok === '1' || true;
-
+    const ok = result?.rows?.[0]?.ok === 1 || result?.rows?.[0]?.ok === '1';
     return res.json({
       ok,
       message: 'Database reachable',
@@ -165,7 +166,7 @@ app.get('/curveballs', async (req, res) => {
   res.json(records);
 });
 
-app.post('/migrate', async (req, res) => {
+app.post('/scenario/import', async (req, res) => {
   const { password } = req.body;
 
   // Ensure there is in fact some password set.
@@ -175,7 +176,7 @@ app.post('/migrate', async (req, res) => {
   }
 
   if (password !== configuredPassword) {
-    return res.status(400).json({ password: 'Invalid master password' });
+    return res.status(400).json({ password: 'Invalid migration password' });
   }
 
   const accessToken = process.env.AIRTABLE_ACCESS_TOKEN;
@@ -189,7 +190,7 @@ app.post('/migrate', async (req, res) => {
   }
 
   try {
-    await migrate(accessToken, baseId);
+    await importScenarioFromAirtable(accessToken, baseId);
     return res.send();
   } catch (err) {
     if (err.error === 'AUTHENTICATION_REQUIRED') {
