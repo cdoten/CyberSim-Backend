@@ -25,9 +25,7 @@
     "reset-db": "npm run reset:migrations && npm run seed",
 
     "dataset:export": "node -r dotenv/config scripts/exportDatasetFromAirtable.js",
-
-    "build-deploy": "zip -r deploy.zip . -x \"node_modules/*\" -x \".git/*\" -x \"deploy.zip\""
-  },
+    "build-deploy": "zip -r deploy.zip . -x \"node_modules/*\" -x \"*.env*\" -x \".git/*\" -x \".zip\" -x \".vscode/*\""  },
   "dependencies": {
     "@types/jest": "^26.0.8",
     "airtable": "^0.11.2",

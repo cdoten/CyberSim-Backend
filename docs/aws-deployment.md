@@ -21,9 +21,8 @@ Each environment (e.g., staging, production) should have its own:
 ### Create Environment
 
 1. Environment tier: **Web server**
-2. Platform: **Docker (Amazon Linux 2023)**
+2. Platform: **Docker (Amazon Linux 2023)**  (as of 3/2026)
 3. Preset: **Single instance** (recommended for initial deployment)
-4. Monitoring: **Basic**
 
 The backend runs inside the Docker container defined in the repository.
 
@@ -82,9 +81,9 @@ EXPOSE 8080
 
 Recommended baseline configuration:
 
-- Engine: PostgreSQL
+- Engine: PostgreSQL (not Aurora)
 - Version: 15.x
-- Instance class: `db.t3.micro`
+- Instance class: Free Tier is probably suitable
 - Storage: 20GB
 - Availability: Low (single AZ)
 - Deletion policy: Snapshot
