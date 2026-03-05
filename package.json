@@ -24,7 +24,9 @@
     "seed": "knex seed:run",
     "reset-db": "npm run reset:migrations && npm run seed",
 
-    "dataset:export": "node -r dotenv/config scripts/exportDatasetFromAirtable.js"
+    "dataset:export": "node -r dotenv/config scripts/exportDatasetFromAirtable.js",
+
+    "build-deploy": "zip -r deploy.zip . -x \"node_modules/*\" -x \".git/*\" -x \"deploy.zip\""
   },
   "dependencies": {
     "@types/jest": "^26.0.8",

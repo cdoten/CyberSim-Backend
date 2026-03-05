@@ -1,11 +1,12 @@
-FROM node:14.5.0-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
-COPY package* ./
+# Install dependencies first (better Docker caching)
+COPY package*.json ./
+RUN npm ci --only=production
+# Copy application code
 COPY . .
-
-RUN npm i --production
 
 EXPOSE 8080
 

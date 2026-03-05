@@ -28,3 +28,6 @@ yarn-error.log*
 
 # for local deployment purposes
 /.ebextensions
+
+# Exports
+deploy.zip
