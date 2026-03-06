@@ -12,25 +12,22 @@
     "dev": "LOG_LEVEL=info nodemon --watch .env -r dotenv/config index.js",
     "start": "node -r dotenv/config index.js",
     "start:prod": "NODE_ENV=production node -r dotenv/config index.js",
-
     "lint": "eslint .",
     "smoke": "bash scripts/smoke.sh",
     "test": "cross-env DOTENV_CONFIG_PATH=.env.test node -r dotenv/config ./node_modules/.bin/jest --runInBand",
-
     "migrate": "knex migrate:latest",
     "rollback": "knex migrate:rollback",
     "reset:migrations": "knex migrate:rollback --all && knex migrate:latest",
-
     "seed": "knex seed:run",
     "reset-db": "npm run reset:migrations && npm run seed",
-
     "dataset:export": "node -r dotenv/config scripts/exportDatasetFromAirtable.js",
-    "build-deploy": "zip -r deploy.zip . -x \"node_modules/*\" -x \"*.env*\" -x \".git/*\" -x \".zip\" -x \".vscode/*\""  },
+    "build-deploy": "zip -r deploy.zip . -x \"node_modules/*\" -x \"*.env*\" -x \".git/*\" -x \".zip\" -x \".vscode/*\""
+  },
   "dependencies": {
     "@types/jest": "^26.0.8",
     "airtable": "^0.11.2",
     "body-parser": "^1.19.2",
-    "cors": "^2.8.5",
+    "cors": "^2.8.6",
     "dotenv": "8.2.0",
     "express": "^4.17.1",
     "express-pino-logger": "5.0.0",

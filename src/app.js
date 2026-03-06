@@ -34,6 +34,13 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(
+  cors({
+    origin: process.env.UI_ORIGIN,
+    credentials: true,
+  }),
+);
+
 app.get('/', async (req, res) => {
   try {
     await db.raw('SELECT 1;');

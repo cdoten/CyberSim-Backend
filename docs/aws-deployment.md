@@ -23,6 +23,9 @@ Each environment (e.g., staging, production) should have its own:
 1. Environment tier: **Web server**
 2. Platform: **Docker (Amazon Linux 2023)**  (as of 3/2026)
 3. Preset: **Single instance** (recommended for initial deployment)
+4. Initial database name: cybersim
+
+AWS will automatically create that database when the instance is provisioned.
 
 The backend runs inside the Docker container defined in the repository.
 
@@ -46,7 +49,7 @@ Elastic Beanstalk → Configuration → Software → Environment properties
 - `LOG_LEVEL`
 - `UI_ORIGIN=https://<your-amplify-domain>` (recommended)
 
-## CORS Configuration
+### CORS Configuration
 
 Because the CyberSim UI is hosted separately (e.g., AWS Amplify), the backend must allow cross-origin requests.
 
@@ -64,7 +67,7 @@ app.use(
 
 For production, prefer setting `UI_ORIGIN` to your Amplify domain rather than `*`.
 
-## Docker Port
+### Docker Port
 
 Elastic Beanstalk expects the container to listen on port **8080**.
 
@@ -90,7 +93,11 @@ Recommended baseline configuration:
 
 Each EB environment should connect to its own RDS instance.
 
-## Database Migration
+### Create the Cybersim Database
+
+
+
+### Database Migration
 
 Before the backend can operate, the database schema must be created.
 
@@ -105,7 +112,7 @@ You can run this either:
 - From a machine that can reach RDS (e.g., via the SSH tunnel below), or
 - From inside the Elastic Beanstalk EC2 instance/container (depending on your ops workflow)
 
-## Database Access (SSH Tunnel)
+### Database Access (SSH Tunnel)
 
 If direct database access is required from a local machine:
 
@@ -124,7 +131,9 @@ Then connect locally:
 psql -U <USER> -h 127.0.0.1 -p 5432
 ```
 
-## Deployment Validation
+The RDS security group must allow inbound PostgreSQL (5432) from the Elastic Beanstalk instance security group.
+
+### Deployment Validation
 
 After deployment, verify the backend is reachable at:
 

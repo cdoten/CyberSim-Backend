@@ -14,6 +14,64 @@ const checkEnvironment = async () => {
   }
 };
 
+const formatDbConnectionError = (err) => {
+  const message = err?.message || String(err);
+
+  if (message.includes('ENOTFOUND')) {
+    return 'Database host could not be resolved. Check the RDS endpoint in DB_URL.';
+  }
+
+  if (
+    message.includes('ECONNREFUSED') ||
+    message.includes('ETIMEDOUT') ||
+    message.includes('Timeout acquiring a connection') ||
+    message.toLowerCase().includes('timeout')
+  ) {
+    return 'Database connection timed out or was refused. Check that Elastic Beanstalk can reach RDS on port 5432, and verify VPC and security group rules.';
+  }
+
+  if (message.includes('password authentication failed')) {
+    return 'Database authentication failed. Check the username and password in DB_URL.';
+  }
+
+  if (message.includes('does not exist')) {
+    return 'Database does not exist. Check the database name in DB_URL.';
+  }
+
+  if (message.toLowerCase().includes('ssl')) {
+    return 'Database SSL connection failed. Check PostgreSQL SSL settings and DB_URL configuration.';
+  }
+
+  return `Database connection failed: ${message}`;
+};
+
+const checkDatabaseConnection = async (db) => {
+  try {
+    await db.raw('select 1');
+    logger.info('Database connection successful');
+  } catch (err) {
+    throw new Error(formatDbConnectionError(err));
+  }
+};
+
+const runDatabaseSetup = async (db) => {
+  try {
+    if (process.env.NODE_ENV === 'test') {
+      await db.migrate.rollback({}, true);
+      await db.migrate.latest();
+      await db.seed.run();
+      logger.info('Database successfully reset');
+    } else {
+      await db.migrate.latest();
+      logger.info('Database migrations completed');
+    }
+  } catch (err) {
+    throw new Error(
+      `Database migration failed: ${err?.message || String(err)}`,
+    );
+  }
+};
+
 (async () => {
   try {
     // Validate env first (before importing modules that may open handles)
@@ -23,26 +81,11 @@ const checkEnvironment = async () => {
     const app = require('./src/app');
     const createSocket = require('./src/socketio');
 
-    // DB sanity via migrations (and reset in test)
-    try {
-      if (process.env.NODE_ENV === 'test') {
-        await db.migrate.rollback({}, true);
-        await db.migrate.latest();
-        await db.seed.run();
-        logger.info('Database successfully reset');
-      } else {
-        await db.migrate.latest();
-      }
-    } catch (e) {
-      throw new AggregateError(
-        [
-          new Error(
-            `Database migration/connection failed: ${e?.message || String(e)}`,
-          ),
-        ],
-        'Environment validation failed',
-      );
-    }
+    // First confirm we can reach the database at all
+    await checkDatabaseConnection(db);
+
+    // Then run migrations / test reset
+    await runDatabaseSetup(db);
 
     const port = process.env.PORT || 8080;
     const http = createServer(app);
