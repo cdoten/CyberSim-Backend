@@ -18,7 +18,7 @@ const {
 module.exports = (http) => {
   const io = socketio(http, {
     cors: {
-      origin: process.env.UI_ORIGIN,
+      origin: process.env.UI_ORIGINS,
       methods: ['GET', 'POST'],
       credentials: true,
     },

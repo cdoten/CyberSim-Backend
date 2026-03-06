@@ -40,6 +40,9 @@ Elastic Beanstalk → Configuration → Software → Environment properties
 - `PORT=8080`
 - `NODE_ENV=production`
 - `DB_URL=postgres://<USER>:<PASSWORD>@<HOST>:<PORT>/<DB_NAME>`
+- `UI_ORIGINS=https://cso.cybersim.app,https://<your-amplify-domain>`
+
+`UI_ORIGINS` is a ccomma-separated list of frontend origins allowed to access the API.
 
 `PORT` must match the port the app listens on inside the Docker container.
 
@@ -47,7 +50,14 @@ Elastic Beanstalk → Configuration → Software → Environment properties
 
 - `IMPORT_PASSWORD`
 - `LOG_LEVEL`
-- `UI_ORIGIN=https://<your-amplify-domain>` (recommended)
+
+UI_ORIGINS
+
+
+
+
+Example:
+
 
 ### CORS Configuration
 

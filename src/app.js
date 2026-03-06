@@ -36,7 +36,7 @@ app.use((req, res, next) => {
 
 app.use(
   cors({
-    origin: process.env.UI_ORIGIN,
+    origin: process.env.UI_ORIGINS,
     credentials: true,
   }),
 );
