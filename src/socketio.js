@@ -15,10 +15,15 @@ const {
   performCurveball,
 } = require('./models/game');
 
+const allowedOrigins = (process.env.UI_ORIGINS || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 module.exports = (http) => {
   const io = socketio(http, {
     cors: {
-      origin: process.env.UI_ORIGINS,
+      origin: allowedOrigins,
       methods: ['GET', 'POST'],
       credentials: true,
     },

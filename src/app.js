@@ -34,9 +34,25 @@ app.use((req, res, next) => {
   next();
 });
 
+const allowedOrigins = (process.env.UI_ORIGINS || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 app.use(
   cors({
-    origin: process.env.UI_ORIGINS,
+    origin(origin, callback) {
+      // Allow requests like curl or health checks with no Origin header
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
   }),
 );
