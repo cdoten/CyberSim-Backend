@@ -58,6 +58,21 @@ module.exports = async function seedTestData(db) {
     },
   ]);
 
+  // Dictionary
+  await db('dictionary').insert([
+
+    {
+      "id": "rec8jJttwZ7gSK4F4",
+      "word": "poll",
+      "synonym": "poll"
+    },
+    {
+      "id": "recGrOxugbY8ZiF2r",
+      "word": "budget",
+      "synonym": "funds"
+    }
+  ]);
+
   // INJECTIONS (two-pass insert so followup_injection FK is always safe)
 
   // 1) Insert all injections with followup_injection = null
