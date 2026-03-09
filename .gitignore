@@ -26,8 +26,5 @@ yarn-error.log*
 
 .npmrc
 
-# for local deployment purposes
-/.ebextensions
-
 # Exports
 deploy.zip
