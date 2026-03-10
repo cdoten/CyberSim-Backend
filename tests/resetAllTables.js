@@ -10,6 +10,7 @@ module.exports = async () => {
   await db('game_system').del();
   await db('game_mitigation').del();
   await db('game_log').del();
+  await db('dictionary').del();
 
   // Game parent
   await db('game').del();

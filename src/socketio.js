@@ -23,12 +23,20 @@ const allowedOrigins = (process.env.UI_ORIGINS || '')
 module.exports = (http) => {
   const io = socketio(http, {
     cors: {
-      origin: allowedOrigins,
+      origin(origin, callback) {
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+
+        return callback(new Error(`Socket origin not allowed: ${origin}`));
+      },
       methods: ['GET', 'POST'],
       credentials: true,
     },
   });
-
+  
   io.on(SocketEvents.CONNECT, (socket) => {
     logger.info('Facilitator CONNECT');
     let gameId = null;

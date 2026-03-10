@@ -51,7 +51,7 @@ app.use(
         return callback(null, true);
       }
 
-      return callback(new Error(`CORS blocked for origin: ${origin}`));
+      return callback(new Error(`Origin not allowed by CORS: ${origin}`));
     },
     credentials: true,
   }),

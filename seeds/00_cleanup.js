@@ -11,6 +11,7 @@ exports.seed = async (knex) => {
   await knex('system').del();
   await knex('action').del();
   await knex('role').del();
+  await knex('dictionary').del();
 
   // Optional: if you have dictionary/location tables seeded elsewhere,
   // add them here too.
