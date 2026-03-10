@@ -36,7 +36,7 @@ module.exports = (http) => {
       credentials: true,
     },
   });
-  
+
   io.on(SocketEvents.CONNECT, (socket) => {
     logger.info('Facilitator CONNECT');
     let gameId = null;
