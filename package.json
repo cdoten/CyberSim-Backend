@@ -11,7 +11,9 @@
   "scripts": {
     "dev": "LOG_LEVEL=info nodemon --watch .env -r dotenv/config index.js",
     "start": "node -r dotenv/config index.js",
-    "start:prod": "NODE_ENV=production node -r dotenv/config index.js",
+    "start:prod": "NODE_ENV=production node -r dotenv/config index.js",     
+    
+    "secrets": "gitleaks protect --staged --verbose",
     "lint": "eslint .",
     "smoke": "bash scripts/smoke.sh",
     "test": "cross-env DOTENV_CONFIG_PATH=.env.test node -r dotenv/config ./node_modules/.bin/jest --runInBand",
@@ -63,7 +65,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "npm run lint",
+      "pre-commit": "npm run secrets && npm run lint",
       "pre-push": "npm run test"
     }
   }

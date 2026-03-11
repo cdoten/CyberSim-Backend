@@ -11,6 +11,16 @@
 # production
 /build
 
+# certificates
+*.key
+*.crt
+*.pem
+*.pfx
+
+# local cert directories
+certs/
+ssl/
+
 # misc
 .DS_Store
 .env
