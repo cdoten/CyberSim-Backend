@@ -19,8 +19,16 @@ https://github.com/cdoten/CyberSim-UI
 ## Requirements
 
 - Node.js (v22 recommended)
-- Docker + Docker Compose (for local Postgres)
+- Docker + Docker Compose (for local Postgres and container builds)
 - PostgreSQL (production)
+
+### Local Hosting Quick Start
+
+docker compose -f docker-compose-dev.yaml up -d
+cp .env.example .env
+npm install
+npm run reset-db
+npm start
 
 ## Local Development
 
@@ -79,12 +87,15 @@ API runs at:
 http://localhost:3001
 ```
 
+The port is controlled by the `PORT` environment variable.
+Local development typically uses `3001`, while production uses `8080`.
+
 ## Project Structure
 
 - `/src` — Application source code
 - `/migrations` — Database schema migrations
 - `/seeds` — Fixture data and dataset snapshots
-- `/docker-compose-dev.yaml` — Local Postgres configuration
+- `/docker-compose-dev.yaml` — Local Postgres container for development 
 - `/Dockerfile` — Production container definition
 
 ## Health Endpoints
@@ -144,7 +155,7 @@ This will:
 To export a versioned dataset snapshot from the application database into the repository:
 
 ```bash
-npm run snapshot:export
+npm run dataset:export
 ```
 
 This writes a dataset to:
@@ -192,6 +203,7 @@ The test suite resets and reseeds the database as part of execution.
 - `PORT`
 - `NODE_ENV`
 - `DB_URL`
+- `UI_ORIGINS`
 
 #### DB_URL format
 
@@ -204,6 +216,19 @@ postgres://<USER>:<PASSWORD>@<HOST>:<PORT>/<DB_NAME>
 - `production`
 - `development`
 - `test`
+
+#### UI_ORIGINS
+
+Comma-separated list of frontend origins allowed to access the API via CORS.
+
+Examples:
+
+Local development:
+`UI_ORIGINS=http://localhost:3000,http://127.0.0.1:3000`
+
+Production:
+`UI_ORIGINS=https://cso.cybersim.app,
+
 
 ### Optional
 
@@ -229,4 +254,4 @@ See `docs/airtable-handbook.md`.
 
 ## Credits
 
-The CyberSim facilitation app was developed by Rising Stack for the National Democratic Institute (NDI), with support from Microsoft and the National Endowment for Democracy, as part of broader efforts to strengthen civic resilience in the digital age.
+The CyberSim facilitation app was originally developed by Rising Stack for the National Democratic Institute (NDI), with support from Microsoft and the National Endowment for Democracy, as part of broader efforts to strengthen civic resilience in the digital age.

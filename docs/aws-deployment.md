@@ -1,162 +1,344 @@
 # AWS Deployment Guide
 
-This document describes how to deploy the CyberSim Backend API to AWS using Elastic Beanstalk and RDS.
+This document describes how to deploy the CyberSim Backend API to AWS
+using Elastic Beanstalk, Docker, an Application Load Balancer (ALB) with
+ACM TLS, and PostgreSQL on Amazon RDS.
 
-The backend runs inside a Docker container defined by the `Dockerfile` in the repository root.
+The backend runs inside a Docker container defined by the `Dockerfile`
+in the repository root.
+
+## Quick Deployment Summary
+
+A typical production deployment follows these steps:
+
+1.  Create shared infrastructure (security groups, RDS database, ACM
+    certificate).
+2.  Create an Elastic Beanstalk environment using the Docker platform.
+3.  Attach reusable security groups to the load balancer and instances.
+4.  Configure environment variables in Elastic Beanstalk.
+5.  Deploy the backend application bundle.
+6.  Configure the load balancer HTTPS listener and health checks.
+7.  Point `api.cybersim.app` to the EB environment using Cloudflare DNS.
+8.  Run database migrations and seed initial data.
+
+Once configured, future deployments only require uploading a new
+application bundle.
 
 ## Overview
 
-Production deployment consists of:
+Production deployment consists of the following components:
 
-- Elastic Beanstalk (Docker platform)
-- PostgreSQL (Amazon RDS)
-- Environment variables configured in EB
+-   Cloudflare DNS
+-   AWS Application Load Balancer (ALB) with ACM TLS
+-   Elastic Beanstalk (Docker platform)
+-   PostgreSQL (Amazon RDS)
+-   Environment variables configured in Elastic Beanstalk
 
-Each environment (e.g., staging, production) should have its own:
-- Elastic Beanstalk environment
-- RDS database
+Architecture:
+
+    Internet
+       │
+    Cloudflare DNS
+       │
+    api.cybersim.app
+       │
+    HTTPS (443)
+       │
+    AWS Application Load Balancer
+       │
+    Elastic Beanstalk EC2 Instance
+       │
+    Docker container
+       │
+    Node / Express API
+       │
+    PostgreSQL (RDS)
+
+Infrastructure components such as security groups and TLS certificates
+should be created once and reused across environments.
+
+### Security Group Relationship Diagram
+
+    Internet
+       │
+       ▼
+    cybersim-alb-public-sg
+      inbound: 80, 443 from 0.0.0.0/0
+       │
+       ▼
+    cybersim-backend-app-sg
+      inbound: 8080 from cybersim-alb-public-sg
+       │
+       ▼
+    cybersim-rds-production-sg
+      inbound: 5432 from cybersim-backend-app-sg
+
+This arrangement allows:
+
+-   public web traffic to reach the load balancer
+-   only the load balancer to reach backend instances
+-   only backend instances to reach PostgreSQL
+
+## Infrastructure Setup (One-Time Setup)
+
+### Security Groups
+
+Create three reusable security groups.
+
+#### ALB Security Group
+
+Example:
+
+    cybersim-alb-public-sg
+
+Inbound rules:
+
+    80   from 0.0.0.0/0
+    443  from 0.0.0.0/0
+
+Outbound:
+
+    Allow all
+
+#### Backend Application Security Group
+
+Example:
+
+    cybersim-backend-app-sg
+
+Inbound rules:
+
+    8080 from cybersim-alb-public-sg
+
+Outbound:
+
+    Allow all
+
+#### Database Security Group
+
+Example:
+
+    cybersim-rds-production-sg
+
+Inbound rules:
+
+    5432 from cybersim-backend-app-sg
+
+### Create the PostgreSQL Database
+
+Create an Amazon RDS PostgreSQL instance.
+
+Recommended baseline configuration:
+
+-   Engine: PostgreSQL
+-   Version: 15.x
+-   Instance class: small / free-tier compatible
+-   Storage: 20GB
+-   Availability: Single AZ
+-   Public access: Disabled
+-   VPC: Same VPC used for Elastic Beanstalk
+-   Security group: `cybersim-rds-production-sg`
+
+Create the database:
+
+    cybersim
+
+Record the connection string:
+
+    postgres://<USER>:<PASSWORD>@<RDS-ENDPOINT>:5432/cybersim
+
+### Create TLS Certificate (ACM)
+
+Request a certificate in AWS Certificate Manager for:
+
+    api.cybersim.app
+
+Use DNS validation and wait for status:
+
+    Issued
 
 ## Elastic Beanstalk Setup
 
 ### Create Environment
 
-1. Environment tier: **Web server**
-2. Platform: **Docker (Amazon Linux 2023)**  (as of 3/2026)
-3. Preset: **Single instance** (recommended for initial deployment)
-4. Initial database name: cybersim
+Configuration:
 
-AWS will automatically create that database when the instance is provisioned.
+-   Environment tier: **Web server**
+-   Platform: **Docker (Amazon Linux 2023)**
+-   Environment type: **Load balanced**
+-   Instance type: **t3.micro**
+-   Minimum instances: **1**
+-   Maximum instances: **1**
 
-The backend runs inside the Docker container defined in the repository.
+Attach instance role:
 
-## Required Environment Variables
+    aws-elasticbeanstalk-ec2-role
+
+Ensure the role includes:
+
+    AmazonSSMManagedInstanceCore
+
+### Attach Security Groups
+
+Load balancer security group:
+
+    cybersim-alb-public-sg
+
+Instance security group:
+
+    cybersim-backend-app-sg
+
+## Application Configuration
+
+### Required Environment Variables
 
 Set these in:
 
 Elastic Beanstalk → Configuration → Software → Environment properties
 
-### Required
+    PORT=8080
+    NODE_ENV=production
+    DB_URL=postgres://<USER>:<PASSWORD>@<HOST>:<PORT>/<DB_NAME>
+    UI_ORIGINS=https://cso.cybersim.app,https://main.xxxxxx.amplifyapp.com
 
-- `PORT=8080`
-- `NODE_ENV=production`
-- `DB_URL=postgres://<USER>:<PASSWORD>@<HOST>:<PORT>/<DB_NAME>`
-- `UI_ORIGINS=https://cso.cybersim.app,https://<your-amplify-domain>`
+For local development you may add:
 
-`UI_ORIGINS` is a ccomma-separated list of frontend origins allowed to access the API.
-
-`PORT` must match the port the app listens on inside the Docker container.
-
-### Optional
-
-- `IMPORT_PASSWORD`
-- `LOG_LEVEL`
-
-UI_ORIGINS
-
-
-
-
-Example:
-
+    http://localhost:3000,http://127.0.0.1:3000
 
 ### CORS Configuration
 
-Because the CyberSim UI is hosted separately (e.g., AWS Amplify), the backend must allow cross-origin requests.
+Example Express configuration:
 
-Ensure the Express application enables CORS for the UI origin. A common pattern:
-
-```js
+``` javascript
 const cors = require('cors');
 
 app.use(
   cors({
-    origin: process.env.UI_ORIGIN || '*',
+    origin: process.env.UI_ORIGINS?.split(',') || '*',
   }),
 );
 ```
 
-For production, prefer setting `UI_ORIGIN` to your Amplify domain rather than `*`.
+### Docker Port Configuration
 
-### Docker Port
-
-Elastic Beanstalk expects the container to listen on port **8080**.
-
-Ensure:
-
-- The application listens on `process.env.PORT`
-- The Dockerfile includes:
-
-```dockerfile
-EXPOSE 8080
-```
-
-## RDS (PostgreSQL) Setup
-
-Recommended baseline configuration:
-
-- Engine: PostgreSQL (not Aurora)
-- Version: 15.x
-- Instance class: Free Tier is probably suitable
-- Storage: 20GB
-- Availability: Low (single AZ)
-- Deletion policy: Snapshot
-
-Each EB environment should connect to its own RDS instance.
-
-### Create the Cybersim Database
-
-
-
-### Database Migration
-
-Before the backend can operate, the database schema must be created.
-
-Run migrations after the environment is created:
-
-```bash
-npm run knex migrate:latest
-```
-
-You can run this either:
-
-- From a machine that can reach RDS (e.g., via the SSH tunnel below), or
-- From inside the Elastic Beanstalk EC2 instance/container (depending on your ops workflow)
-
-### Database Access (SSH Tunnel)
-
-If direct database access is required from a local machine:
-
-1. SSH into the EB EC2 instance.
-2. Create a local port forward to the RDS endpoint.
+The app must listen on port 8080.
 
 Example:
 
-```bash
-ssh -N -L 5432:<RDS_ENDPOINT>:5432 ec2-user@<EC2_PUBLIC_IP> -i <PRIVATE_KEY>
+``` javascript
+const port = process.env.PORT || 8080;
+app.listen(port, '0.0.0.0');
 ```
 
-Then connect locally:
+Dockerfile must include:
 
-```bash
-psql -U <USER> -h 127.0.0.1 -p 5432
+``` dockerfile
+EXPOSE 8080
 ```
 
-The RDS security group must allow inbound PostgreSQL (5432) from the Elastic Beanstalk instance security group.
+## Load Balancer Configuration
 
-### Deployment Validation
+### HTTPS Listener
 
-After deployment, verify the backend is reachable at:
+Port:
 
-- `https://<elastic-beanstalk-url>/health`
-- `https://<elastic-beanstalk-url>/health/db`
-- `https://<elastic-beanstalk-url>/health/airtable`
+    443
 
-All should return HTTP 200.
+Certificate:
 
-## Notes
+    ACM certificate for api.cybersim.app
 
-- Each environment should use isolated database credentials.
-- Secrets should be managed securely (consider AWS Secrets Manager for production).
-- Avoid embedding credentials directly in source control.
-- After the backend is live, update the UI to point at it:
-  - Set `REACT_APP_API_URL=https://<elastic-beanstalk-url>` in Amplify and redeploy the UI.
+Recommended policy:
+
+    ELBSecurityPolicy-TLS13-1-2-2021-06
+
+### HTTP Redirect
+
+    HTTP :80 → HTTPS :443
+
+### Health Checks
+
+Path:
+
+    /health
+
+Expected response:
+
+``` json
+{"status":"ok"}
+```
+
+## Deployment
+
+Create a deployment bundle:
+
+``` bash
+zip -r deploy.zip .   -x "node_modules/*"   -x "*.env*"   -x ".git/*"
+```
+
+Upload the archive when deploying a new version.
+
+## Database Migration and Seeding
+
+Connect to the instance via Session Manager:
+
+``` bash
+aws ssm start-session --target <instance-id>
+```
+
+Identify the container:
+
+``` bash
+docker ps
+```
+
+Enter the container:
+
+``` bash
+docker exec -it <container-id> sh
+```
+
+Run migrations:
+
+``` bash
+npm run migrate
+```
+
+Seed:
+
+``` bash
+npm run seed
+```
+
+Dataset seed:
+
+``` bash
+SEED_TAG=cso@YYYY-MM-DD.X npm run seed:dataset
+```
+
+## Deployment Validation
+
+Verify:
+
+    https://api.cybersim.app/health
+    https://api.cybersim.app/health/db
+
+## DNS Configuration
+
+Cloudflare DNS:
+
+    api.cybersim.app → CNAME → <environment><aws-string>.us-east-1.elasticbeanstalk.com
+
+SSL mode:
+
+    Full (strict)
+
+## Result
+
+A working deployment consists of:
+
+-   Cloudflare DNS
+-   AWS Application Load Balancer with ACM TLS
+-   Elastic Beanstalk environment
+-   Docker backend container
+-   PostgreSQL RDS database
