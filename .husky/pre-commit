@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+echo "🔐 Running secret scan..."
+npm run secrets
+
+echo "🧹 Running linter..."
+npm run lint

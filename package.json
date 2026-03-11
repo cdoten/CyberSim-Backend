@@ -9,27 +9,23 @@
     "node": "22.x"
   },
   "scripts": {
+    "prepare": "husky",
     "dev": "LOG_LEVEL=info nodemon --watch .env -r dotenv/config index.js",
     "start": "node -r dotenv/config index.js",
-    "start:prod": "NODE_ENV=production node -r dotenv/config index.js",     
-    
+    "start:prod": "NODE_ENV=production node -r dotenv/config index.js",
     "secrets": "gitleaks protect --staged --verbose",
     "lint": "eslint .",
     "smoke": "bash scripts/smoke.sh",
     "test": "cross-env DOTENV_CONFIG_PATH=.env.test node -r dotenv/config ./node_modules/.bin/jest --runInBand",
-   
     "migrate": "knex migrate:latest",
     "rollback": "knex migrate:rollback",
     "reset:migrations": "knex migrate:rollback --all && knex migrate:latest",
-   
     "seed": "knex seed:run",
     "seed:fixtures": "knex seed:run --specific 01_fixture_seed.js",
-    "seed:dataset": "knex seed:run --specific 02_dataset_seed.js", 
- 
+    "seed:dataset": "knex seed:run --specific 02_dataset_seed.js",
     "reset-db": "npm run reset:migrations && npm run seed",
     "reset-db:fixtures": "npm run reset:migrations && npm run seed:fixtures",
     "reset-db:dataset": "npm run reset:migrations && npm run seed:dataset",
-    
     "dataset:export": "node -r dotenv/config scripts/exportScenarioFromAirtable.js",
     "build-deploy": "zip -r deploy.zip . -x \"node_modules/*\" -x \"*.env*\" -x \".git/*\" -x \"*.zip\" -x \".vscode/*\""
   },
@@ -56,17 +52,11 @@
     "eslint-plugin-import": "^2.22.0",
     "eslint-plugin-jest": "^23.20.0",
     "eslint-plugin-prettier": "^3.1.4",
-    "husky": "^4.2.5",
+    "husky": "^9.1.7",
     "jest": "26.2.2",
     "nodemon": "2.0.4",
     "pino-pretty": "^4.8.0",
     "prettier": "^2.0.5",
     "supertest": "4.0.2"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "npm run secrets && npm run lint",
-      "pre-push": "npm run test"
-    }
   }
 }

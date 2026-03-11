@@ -94,7 +94,7 @@ const runDatabaseSetup = async (db) => {
     const server = http.listen(port, '0.0.0.0', () => {
       logger.info(`Server is running at port: ${port}`);
     });
-    
+
     let shuttingDown = false;
     const gracefulShutdown = () => {
       logger.info('Got kill signal, starting graceful shutdown');
