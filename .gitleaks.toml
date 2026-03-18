@@ -1,0 +1,8 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Docs with placeholder Airtable examples"
+paths = [
+  '''(^|/)docs/airtable-handbook\.md$''',
+]
