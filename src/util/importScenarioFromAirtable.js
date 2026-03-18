@@ -68,7 +68,7 @@ function addPartyLocation(locations) {
     : locations?.[0];
 }
 
-async function migrate(accessToken, baseId) {
+async function migrate(accessToken, baseId, scenarioSlug = 'cso') {
   // connect to the airtable instance
   Airtable.configure({
     endpointUrl: 'https://api.airtable.com',
@@ -215,24 +215,38 @@ async function migrate(accessToken, baseId) {
     location.type = location.location_code;
   });
 
-  // clean the current db and re-migrate it
+  // Reset the db and re-apply migrations. This wipes all data (games included)
+  // and is acceptable for single-scenario local/production use. When full
+  // multi-scenario import support is needed this will become a targeted
+  // per-scenario delete instead.
   await db.migrate.rollback({}, true);
   await db.migrate.latest();
+
+  // Look up the scenario row created by the migration so we can tag all
+  // imported rows with its id.
+  const scenario = await db('scenario').where({ slug: scenarioSlug }).first();
+  if (!scenario) {
+    throw new Error(`Scenario "${scenarioSlug}" not found after migration. Check migration 20260313000100.`);
+  }
+  const scenarioId = scenario.id;
+
+  // Tag every row with scenario_id before DB validation and insert.
+  const tag = (rows) => rows.map((row) => ({ ...row, scenario_id: scenarioId }));
 
   // add all the data to the db
   // sequential processing is important here as some tables rely on data from other tables to be already there
   const validatedSqlTables = await Promise.allSettled([
-    validateForDb('location', locations),
-    validateForDb('dictionary', dictionary),
-    validateForDb('injection', injections),
-    validateForDb('mitigation', mitigations),
-    validateForDb('response', responses),
-    validateForDb('system', systems),
-    validateForDb('role', roles),
-    validateForDb('action', actions),
-    validateForDb('curveball', curveballs),
-    validateForDb('injection_response', injectionResponse),
-    validateForDb('action_role', actionRole),
+    validateForDb('location', tag(locations)),
+    validateForDb('dictionary', tag(dictionary)),
+    validateForDb('injection', tag(injections)),
+    validateForDb('mitigation', tag(mitigations)),
+    validateForDb('response', tag(responses)),
+    validateForDb('system', tag(systems)),
+    validateForDb('role', tag(roles)),
+    validateForDb('action', tag(actions)),
+    validateForDb('curveball', tag(curveballs)),
+    validateForDb('injection_response', tag(injectionResponse)),
+    validateForDb('action_role', tag(actionRole)),
   ]);
 
   throwNecessaryValidationErrors(

@@ -25,4 +25,16 @@ module.exports = async () => {
   await db('mitigation').del();
   await db('system').del();
   await db('curveball').del();
+  await db('location').del();
+
+  // scenario is the root parent — truncate last.
+  // RESTART IDENTITY resets the auto-increment sequence to 1, so that
+  // seedTestData always produces scenario.id = 1. Without this, the sequence
+  // would keep incrementing (DELETE does not reset sequences in PostgreSQL),
+  // and dummyGame.scenario_id = 1 in testData.js would fail FK validation.
+  // CASCADE is required because other tables FK-reference scenario.
+  // Since we already deleted all child rows above, CASCADE only truncates
+  // already-empty tables — no data loss risk. RESTART IDENTITY resets the
+  // sequence so seedTestData always produces scenario.id = 1.
+  await db.raw('TRUNCATE TABLE scenario RESTART IDENTITY CASCADE');
 };

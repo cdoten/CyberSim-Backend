@@ -190,7 +190,7 @@ app.get('/curveballs', async (req, res) => {
 });
 
 app.post('/scenario/import', async (req, res) => {
-  const { password } = req.body;
+  const { password, scenarioSlug = 'cso' } = req.body;
 
   // Ensure there is in fact some password set.
   const configuredPassword = config.migrationPassword;

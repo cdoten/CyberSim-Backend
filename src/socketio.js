@@ -50,10 +50,15 @@ module.exports = (http) => {
       async (id, initialBudget, initialPollPercentage, callback) => {
         logger.info('CREATEGAME: %s', id);
         try {
+          // scenarioSlug will eventually come from the frontend (step 12 of
+          // the multi-scenario plan). For now it defaults to 'cso' so the
+          // existing UI continues to work without any frontend changes.
+          const scenarioSlug = 'cso';
           const game = await createGame(
             id,
             initialBudget,
             initialPollPercentage,
+            scenarioSlug,
           );
           if (gameId) {
             await socket.leave(gameId);

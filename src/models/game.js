@@ -1,5 +1,6 @@
 const db = require('./db');
 const { getResponsesById } = require('./response');
+const { getScenarioBySlug } = require('./scenario');
 const logger = require('../logger');
 const GameStates = require('../constants/GameStates');
 const { getTimeTaken } = require('../util');
@@ -12,6 +13,7 @@ const getGame = (id) =>
   db('game')
     .select(
       'game.id',
+      'game.scenario_id',
       'game.state',
       'game.poll',
       'game.budget',
@@ -42,17 +44,24 @@ const createGame = async (
   id,
   initialBudget = 6000,
   initialPollPercentage = 55,
+  scenarioSlug = 'cso',
 ) => {
+  const scenario = await getScenarioBySlug(scenarioSlug);
+
   await db('game').insert(
     {
       id,
       budget: initialBudget,
       poll: initialPollPercentage,
+      scenario_id: scenario.id,
     },
     ['id'],
   );
 
-  const systems = await db('system').select('id').orderBy('id');
+  const systems = await db('system')
+    .select('id')
+    .where({ scenario_id: scenario.id })
+    .orderBy('id');
 
   await db('game_system').insert(
     systems.map(({ id: systemId }) => ({
@@ -62,7 +71,10 @@ const createGame = async (
     })),
   );
 
-  const mitigations = await db('mitigation').select('id').orderBy('id');
+  const mitigations = await db('mitigation')
+    .select('id')
+    .where({ scenario_id: scenario.id })
+    .orderBy('id');
 
   await db('game_mitigation').insert(
     mitigations.map(({ id: mitigationId }) => ({
@@ -72,7 +84,10 @@ const createGame = async (
     })),
   );
 
-  const injections = await db('injection').select('id').orderBy('id');
+  const injections = await db('injection')
+    .select('id')
+    .where({ scenario_id: scenario.id })
+    .orderBy('id');
 
   await db('game_injection').insert(
     injections.map(({ id: injectionId }) => ({
