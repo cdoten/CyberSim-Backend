@@ -23,31 +23,26 @@ const STATIC_TABLES = [
   'role',
 ];
 
-const JOIN_TABLES = [
-  'injection_response',
-  'action_role',
-];
+const JOIN_TABLES = ['injection_response', 'action_role'];
 
 const ALL_TABLES = [...STATIC_TABLES, ...JOIN_TABLES, 'game'];
 
 exports.up = async (knex) => {
-  for (const table of ALL_TABLES) {
+  await ALL_TABLES.reduce(async (prev, table) => {
+    await prev;
     const hasColumn = await knex.schema.hasColumn(table, 'scenario_id');
     if (!hasColumn) {
       await knex.schema.alterTable(table, (tbl) => {
-        // integer() matches the increments() primary key type on scenario.id
         tbl.integer('scenario_id').nullable();
-
-        // Index on every scenario_id because almost every static query will
-        // filter by scenario. Without an index this becomes a full table scan.
         tbl.index('scenario_id', `idx_${table}_scenario_id`);
       });
     }
-  }
+  }, Promise.resolve());
 };
 
 exports.down = async (knex) => {
-  for (const table of ALL_TABLES) {
+  await ALL_TABLES.reduce(async (prev, table) => {
+    await prev;
     const hasColumn = await knex.schema.hasColumn(table, 'scenario_id');
     if (hasColumn) {
       await knex.schema.alterTable(table, (tbl) => {
@@ -55,5 +50,5 @@ exports.down = async (knex) => {
         tbl.dropColumn('scenario_id');
       });
     }
-  }
+  }, Promise.resolve());
 };

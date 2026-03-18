@@ -18,10 +18,7 @@ const STATIC_TABLES = [
   'role',
 ];
 
-const JOIN_TABLES = [
-  'injection_response',
-  'action_role',
-];
+const JOIN_TABLES = ['injection_response', 'action_role'];
 
 const ALL_TABLES = [...STATIC_TABLES, ...JOIN_TABLES, 'game'];
 
@@ -31,27 +28,27 @@ exports.up = async (knex) => {
   if (!scenario) {
     throw new Error(
       'Backfill failed: could not find scenario with slug "cso". ' +
-      'Ensure migration 20260313000100 ran successfully.',
+        'Ensure migration 20260313000100 ran successfully.',
     );
   }
 
-  for (const table of ALL_TABLES) {
+  await ALL_TABLES.reduce(async (prev, table) => {
+    await prev;
     const tableExists = await knex.schema.hasTable(table);
-    if (!tableExists) continue;
-
+    if (!tableExists) return;
     await knex(table)
       .whereNull('scenario_id')
       .update({ scenario_id: scenario.id });
-  }
+  }, Promise.resolve());
 };
 
 // Rolling back this migration re-nullifies all scenario_id values, returning
 // the database to the same state as after Migration 2 ran.
 exports.down = async (knex) => {
-  for (const table of ALL_TABLES) {
+  await ALL_TABLES.reduce(async (prev, table) => {
+    await prev;
     const tableExists = await knex.schema.hasTable(table);
-    if (!tableExists) continue;
-
+    if (!tableExists) return;
     await knex(table).update({ scenario_id: null });
-  }
+  }, Promise.resolve());
 };

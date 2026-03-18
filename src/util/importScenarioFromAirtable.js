@@ -226,12 +226,15 @@ async function migrate(accessToken, baseId, scenarioSlug = 'cso') {
   // imported rows with its id.
   const scenario = await db('scenario').where({ slug: scenarioSlug }).first();
   if (!scenario) {
-    throw new Error(`Scenario "${scenarioSlug}" not found after migration. Check migration 20260313000100.`);
+    throw new Error(
+      `Scenario "${scenarioSlug}" not found after migration. Check migration 20260313000100.`,
+    );
   }
   const scenarioId = scenario.id;
 
   // Tag every row with scenario_id before DB validation and insert.
-  const tag = (rows) => rows.map((row) => ({ ...row, scenario_id: scenarioId }));
+  const tag = (rows) =>
+    rows.map((row) => ({ ...row, scenario_id: scenarioId }));
 
   // add all the data to the db
   // sequential processing is important here as some tables rely on data from other tables to be already there

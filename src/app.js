@@ -213,7 +213,7 @@ app.post('/scenario/import', async (req, res) => {
   }
 
   try {
-    await importScenarioFromAirtable(accessToken, baseId);
+    await importScenarioFromAirtable(accessToken, baseId, scenarioSlug);
     return res.send();
   } catch (err) {
     if (err.error === 'AUTHENTICATION_REQUIRED') {

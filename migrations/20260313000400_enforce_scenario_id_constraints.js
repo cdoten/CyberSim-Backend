@@ -26,14 +26,12 @@ const STATIC_TABLES = [
   'role',
 ];
 
-const JOIN_TABLES = [
-  'injection_response',
-  'action_role',
-];
+const JOIN_TABLES = ['injection_response', 'action_role'];
 
 exports.up = async (knex) => {
   // Enforce NOT NULL + FK on static content tables
-  for (const table of STATIC_TABLES) {
+  await STATIC_TABLES.reduce(async (prev, table) => {
+    await prev;
     await knex.schema.alterTable(table, (tbl) => {
       tbl.integer('scenario_id').notNullable().alter();
       tbl
@@ -42,10 +40,11 @@ exports.up = async (knex) => {
         .inTable('scenario')
         .onDelete('RESTRICT');
     });
-  }
+  }, Promise.resolve());
 
   // Join tables get CASCADE — their rows exist only to connect parent rows
-  for (const table of JOIN_TABLES) {
+  await JOIN_TABLES.reduce(async (prev, table) => {
+    await prev;
     await knex.schema.alterTable(table, (tbl) => {
       tbl.integer('scenario_id').notNullable().alter();
       tbl
@@ -54,7 +53,7 @@ exports.up = async (knex) => {
         .inTable('scenario')
         .onDelete('CASCADE');
     });
-  }
+  }, Promise.resolve());
 
   // game table: RESTRICT — preserve game history even if a scenario is retired
   await knex.schema.alterTable('game', (tbl) => {
@@ -70,11 +69,11 @@ exports.up = async (knex) => {
 exports.down = async (knex) => {
   const allTables = [...STATIC_TABLES, ...JOIN_TABLES, 'game'];
 
-  for (const table of allTables) {
+  await allTables.reduce(async (prev, table) => {
+    await prev;
     await knex.schema.alterTable(table, (tbl) => {
-      // Drop the FK constraint (Knex generates the name as tablename_columnname_foreign)
       tbl.dropForeign('scenario_id');
       tbl.integer('scenario_id').nullable().alter();
     });
-  }
+  }, Promise.resolve());
 };

@@ -17,8 +17,20 @@ module.exports = async function seedTestData(db) {
 
   // SYSTEMS
   await db('system').insert([
-    { id: 'S1', name: 'Party website', description: '', type: 'party', scenario_id: scenarioId },
-    { id: 'S2', name: 'DB', description: '', type: 'hq', scenario_id: scenarioId },
+    {
+      id: 'S1',
+      name: 'Party website',
+      description: '',
+      type: 'party',
+      scenario_id: scenarioId,
+    },
+    {
+      id: 'S2',
+      name: 'DB',
+      description: '',
+      type: 'hq',
+      scenario_id: scenarioId,
+    },
   ]);
 
   // ROLES
@@ -75,8 +87,18 @@ module.exports = async function seedTestData(db) {
 
   // DICTIONARY
   await db('dictionary').insert([
-    { id: 'rec8jJttwZ7gSK4F4', word: 'poll', synonym: 'poll', scenario_id: scenarioId },
-    { id: 'recGrOxugbY8ZiF2r', word: 'budget', synonym: 'funds', scenario_id: scenarioId },
+    {
+      id: 'rec8jJttwZ7gSK4F4',
+      word: 'poll',
+      synonym: 'poll',
+      scenario_id: scenarioId,
+    },
+    {
+      id: 'recGrOxugbY8ZiF2r',
+      word: 'budget',
+      synonym: 'funds',
+      scenario_id: scenarioId,
+    },
   ]);
 
   // INJECTIONS (two-pass insert so followup_injection FK is always safe)
@@ -177,8 +199,25 @@ module.exports = async function seedTestData(db) {
 
   // CURVEBALLS
   await db('curveball').insert([
-    { id: 'C4', description: 'Disaster', budget_change: -1000, poll_change: -10, scenario_id: scenarioId },
-    { id: 'C7', description: 'Miracle', budget_change: 1500, poll_change: 10, scenario_id: scenarioId },
-    { id: 'C8', description: 'Oh My God', lose_all_budget: true, scenario_id: scenarioId },
+    {
+      id: 'C4',
+      description: 'Disaster',
+      budget_change: -1000,
+      poll_change: -10,
+      scenario_id: scenarioId,
+    },
+    {
+      id: 'C7',
+      description: 'Miracle',
+      budget_change: 1500,
+      poll_change: 10,
+      scenario_id: scenarioId,
+    },
+    {
+      id: 'C8',
+      description: 'Oh My God',
+      lose_all_budget: true,
+      scenario_id: scenarioId,
+    },
   ]);
 };

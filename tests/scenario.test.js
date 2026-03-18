@@ -5,12 +5,12 @@ const resetGameTables = require('./resetGameTables');
 
 // Helper to insert a minimal second scenario with one system,
 // one mitigation, and one injection — just enough to verify isolation.
-async function seedSecondScenario(db) {
-  const [scenario] = await db('scenario')
+async function seedSecondScenario(knex) {
+  const [scenario] = await knex('scenario')
     .insert({ slug: 'campaign', name: 'Campaign Scenario' })
     .returning('*');
 
-  await db('system').insert({
+  await knex('system').insert({
     id: 'CAMP-S1',
     name: 'Campaign HQ system',
     description: '',
@@ -18,7 +18,7 @@ async function seedSecondScenario(db) {
     scenario_id: scenario.id,
   });
 
-  await db('mitigation').insert({
+  await knex('mitigation').insert({
     id: 'CAMP-M1',
     description: 'Campaign mitigation',
     category: 'Operation',
@@ -28,7 +28,7 @@ async function seedSecondScenario(db) {
     scenario_id: scenario.id,
   });
 
-  await db('injection').insert({
+  await knex('injection').insert({
     id: 'CAMP-I1',
     title: 'Campaign Injection',
     description: 'A campaign-specific injection',
@@ -70,8 +70,6 @@ describe('getScenarioBySlug', () => {
 });
 
 describe('createGame — scenario isolation', () => {
-  let campaignScenario;
-
   beforeEach(async () => {
     await resetGameTables();
     // Remove any previously seeded 'campaign' scenario so we start clean
@@ -80,7 +78,7 @@ describe('createGame — scenario isolation', () => {
     await db('system').where({ id: 'CAMP-S1' }).del();
     await db('scenario').where({ slug: 'campaign' }).del();
 
-    campaignScenario = await seedSecondScenario(db);
+    await seedSecondScenario(db);
   });
 
   test('stores the correct scenario_id on the game row', async () => {
@@ -113,26 +111,32 @@ describe('createGame — scenario isolation', () => {
     expect(csoSystemIds).not.toContain('CAMP-S1');
 
     // Campaign game should have only the campaign system
-    const campaignSystems = await db('game_system').where({ game_id: 'GameCampaign' });
+    const campaignSystems = await db('game_system').where({
+      game_id: 'GameCampaign',
+    });
     const campaignSystemIds = campaignSystems.map((r) => r.system_id);
     expect(campaignSystemIds).toContain('CAMP-S1');
     expect(campaignSystemIds).not.toContain('S1');
     expect(campaignSystemIds).not.toContain('S2');
 
     // Same isolation check for injections
-    const csoInjections = await db('game_injection').where({ game_id: 'GameCSO' });
+    const csoInjections = await db('game_injection').where({
+      game_id: 'GameCSO',
+    });
     const csoInjectionIds = csoInjections.map((r) => r.injection_id);
     expect(csoInjectionIds).not.toContain('CAMP-I1');
 
-    const campaignInjections = await db('game_injection').where({ game_id: 'GameCampaign' });
+    const campaignInjections = await db('game_injection').where({
+      game_id: 'GameCampaign',
+    });
     const campaignInjectionIds = campaignInjections.map((r) => r.injection_id);
     expect(campaignInjectionIds).toContain('CAMP-I1');
     expect(campaignInjectionIds).not.toContain('I1');
   });
 
   test('throws for an unknown scenario slug', async () => {
-    await expect(createGame('GameX', 6000, 55, 'no-such-scenario')).rejects.toThrow(
-      'Scenario not found: "no-such-scenario"',
-    );
+    await expect(
+      createGame('GameX', 6000, 55, 'no-such-scenario'),
+    ).rejects.toThrow('Scenario not found: "no-such-scenario"');
   });
 });
