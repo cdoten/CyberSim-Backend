@@ -1,7 +1,7 @@
 CREATE USER test WITH PASSWORD 'test' CREATEDB;
-CREATE DATABASE ndi_test
+CREATE DATABASE cybersim_test
     WITH
-    OWNER = test
+    OWNER = cybersim
     ENCODING = 'UTF8'
     LC_COLLATE = 'en_US.utf8'
     LC_CTYPE = 'en_US.utf8'
