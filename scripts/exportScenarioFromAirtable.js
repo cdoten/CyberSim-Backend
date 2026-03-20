@@ -31,7 +31,9 @@ function parseArgs(argv) {
 
 function parseSeedTag(tag) {
   if (!tag || typeof tag !== 'string' || !tag.includes('@')) {
-    throw new Error('Missing/invalid --tag. Example: npm run dataset:export -- --tag cso@2026-03-03.1');
+    throw new Error(
+      'Missing/invalid --tag. Example: npm run dataset:export -- --tag cso@2026-03-03.1',
+    );
   }
   const [scenario, revision] = tag.split('@');
   if (!scenario || !revision) {

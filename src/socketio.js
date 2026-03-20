@@ -53,7 +53,7 @@ module.exports = (http) => {
           // scenarioSlug will eventually come from the frontend (step 12 of
           // the multi-scenario plan). For now it defaults to 'cso' so the
           // existing UI continues to work without any frontend changes.
-          const scenarioSlug = 'cso';
+          const scenarioSlug = process.env.SCENARIO_SLUG || 'cso';
           const game = await createGame(
             id,
             initialBudget,
@@ -92,10 +92,10 @@ module.exports = (http) => {
         }
         await socket.join(id);
         gameId = id;
-        callback({ game });
+        return callback({ game });
       } catch (error) {
         logger.error('JOINGAME ERROR: %s', error);
-        callback({ error: 'Server error on join game!' });
+        return callback({ error: 'Server error on join game!' });
       }
     });
 
