@@ -1,16 +1,33 @@
 // tests/seedTestData.js
 module.exports = async function seedTestData(db) {
-  // IMPORTANT: delete in FK-safe order if you keep deletes here.
-  // If you're already calling resetAllTables(), you can omit these del() calls.
+  // Truncate all tables in FK-safe order so this function is idempotent —
+  // safe to call against a non-empty DB without duplicate-key errors.
+  // Runtime tables first (they reference game), then static content,
+  // then the scenario parent row last.
+  await db('game_log').delete();
+  await db('game_mitigation').delete();
+  await db('game_system').delete();
+  await db('game_injection').delete();
+  await db('game').delete();
+  await db('action_role').delete();
+  await db('injection_response').delete();
+  await db('curveball').delete();
+  await db('action').delete();
+  // injection has a self-referential FK (followup_injection → injection.id),
+  // so null it out before deleting to avoid constraint errors.
+  await db('injection').update({ followup_injection: null });
+  await db('injection').delete();
+  await db('response').delete();
+  await db('mitigation').delete();
+  await db('role').delete();
+  await db('dictionary').delete();
+  await db('location').delete();
+  await db('system').delete();
+  await db('scenario').delete();
 
   // SCENARIO — must be inserted first; all static content FKs reference it.
-  // Uses an upsert (onConflict.merge) so this works whether the migration
-  // already inserted the row (reset-db flow) or the table was just truncated
-  // (test flow). Either way we get the row back with its correct id.
   const [scenario] = await db('scenario')
     .insert({ slug: 'cso', name: 'CSO Scenario' })
-    .onConflict('slug')
-    .merge()
     .returning('*');
 
   const scenarioId = scenario.id;

@@ -31,7 +31,7 @@ function parseArgs(argv) {
 
 function parseSeedTag(tag) {
   if (!tag || typeof tag !== 'string' || !tag.includes('@')) {
-    throw new Error('Missing/invalid --tag. Example: --tag cso@2026-03-03.1');
+    throw new Error('Missing/invalid --tag. Example: npm run dataset:export -- --tag cso@2026-03-03.1');
   }
   const [scenario, revision] = tag.split('@');
   if (!scenario || !revision) {
@@ -78,6 +78,10 @@ async function latestMigrationId() {
 
 function normalizeRow(row) {
   const out = { ...row };
+
+  // Strip scenario_id — it is an internal DB integer that is meaningless
+  // outside the source database. The dataset seed re-creates it on import.
+  delete out.scenario_id;
 
   // Knex/pg sometimes returns numeric as string. Normalize the few known ones.
   if (out.poll_change != null) out.poll_change = Number(out.poll_change);
@@ -143,11 +147,16 @@ async function exportTable(tableName, orderBy = 'id') {
       writeJson(path.join(dataDir, 'dictionary.json'), dictionary);
     }
 
+    // Look up the scenario name from the DB to include in the manifest.
+    // The dataset seed uses this to create the scenario row on import.
+    const scenarioRow = await db('scenario').where({ slug: scenario }).first();
+
     // Manifest
     const manifest = {
       tag: args.tag,
       scenario,
       revision,
+      name: scenarioRow?.name || scenario,
       exported_at: new Date().toISOString(),
       airtable: {
         base_id: process.env.AIRTABLE_BASE_ID || null,

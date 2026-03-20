@@ -66,8 +66,16 @@ module.exports = (http) => {
           await socket.join(id);
           gameId = id;
           callback({ game });
-        } catch (_) {
-          callback({ error: 'Game id already exists!' });
+        } catch (err) {
+          // Log the real error so it appears in backend logs, then return a
+          // user-facing message. Previously all errors returned "already exists"
+          // which masked unrelated failures (e.g. missing scenario).
+          logger.error('CREATEGAME ERROR: %s', err?.message || err);
+          const message =
+            err?.code === '23505'
+              ? 'Game id already exists!'
+              : `Failed to create game: ${err?.message || 'unknown error'}`;
+          callback({ error: message });
         }
       },
     );
@@ -77,7 +85,7 @@ module.exports = (http) => {
       try {
         const game = await getGame(id);
         if (!game) {
-          callback({ error: 'Game not found!' });
+          return callback({ error: 'Game not found!' });
         }
         if (gameId) {
           await socket.leave(gameId);

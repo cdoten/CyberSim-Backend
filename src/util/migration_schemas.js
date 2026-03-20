@@ -99,9 +99,12 @@ const airtableSchemas = {
 };
 
 // PostgreSQL DB schemas
+const scenarioId = yup.number().integer().required();
+
 const dbSchemas = {
   injection: yup.object({
     id,
+    scenario_id: scenarioId,
     recommendations: yup.string(),
     title: yup.string().required(),
     description: yup.string().required(),
@@ -117,12 +120,14 @@ const dbSchemas = {
   }),
   mitigation: yup.object({
     id,
+    scenario_id: scenarioId,
     description: yup.string().required(),
     cost: yup.number().min(0).required(),
     category: yup.string().required(),
   }),
   response: yup.object({
     id,
+    scenario_id: scenarioId,
     description: yup.string().required(),
     cost: yup.number().min(0).required(),
     mitigation_id: yup.string(),
@@ -131,26 +136,31 @@ const dbSchemas = {
   }),
   system: yup.object({
     id,
+    scenario_id: scenarioId,
     name: yup.string().required(),
     description: yup.string(),
     type: yup.string().oneOf(locations).required(),
   }),
   role: yup.object({
     id,
+    scenario_id: scenarioId,
     name: yup.string().required(),
   }),
   location: yup.object({
     id,
+    scenario_id: scenarioId,
     name: yup.string().required(),
     type: yup.string().oneOf(locationsShort).required(),
   }),
   dictionary: yup.object({
     id,
+    scenario_id: scenarioId,
     word: yup.string().required(),
     synonym: yup.string().required(),
   }),
   action: yup.object({
     id,
+    scenario_id: scenarioId,
     description: yup.string().required(),
     type: yup.string().oneOf(locationsShort).required(),
     cost: yup.number(),
@@ -160,16 +170,19 @@ const dbSchemas = {
   }),
   curveball: yup.object({
     id,
+    scenario_id: scenarioId,
     description: yup.string().required(),
     poll_change: yup.number(),
     budget_change: yup.number(),
     loose_all_budget: yup.number(),
   }),
   injection_response: yup.object({
+    scenario_id: scenarioId,
     injection_id: yup.string().required(),
     response_id: yup.string().required(),
   }),
   action_role: yup.object({
+    scenario_id: scenarioId,
     action_id: yup.string().required(),
     role_id: yup.string().required(),
   }),

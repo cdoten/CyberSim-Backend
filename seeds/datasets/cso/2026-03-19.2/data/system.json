@@ -1,0 +1,14 @@
+[
+  {
+    "id": "S1",
+    "name": "Party website",
+    "description": "",
+    "type": "party"
+  },
+  {
+    "id": "S2",
+    "name": "DB",
+    "description": "",
+    "type": "hq"
+  }
+]

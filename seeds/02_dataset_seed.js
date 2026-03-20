@@ -104,9 +104,13 @@ async function verifyMigrationMatches(knex, manifest) {
 }
 
 exports.seed = async (knex) => {
-  // Only run dataset seeding when explicitly requested.
+  // Require SEED_TAG to be explicitly set. A silent return here is dangerous
+  // because reset-db:dataset runs reset:migrations first — if the seed then
+  // does nothing, the DB is left empty with no scenario row.
   if (!process.env.SEED_TAG) {
-    return;
+    throw new Error(
+      'SEED_TAG is not set. Use: SEED_TAG="scenario@revision" npm run seed:dataset',
+    );
   }
 
   const { scenario, revision } = parseSeedTag(process.env.SEED_TAG);
@@ -173,17 +177,47 @@ exports.seed = async (knex) => {
   const injectionResponse =
     loadDatasetJson(datasetDir, 'injection_response.json') || [];
 
-  // Insert parents first
-
   await knex.transaction(async (trx) => {
-    if (system.length) await trx('system').insert(system);
-    if (role.length) await trx('role').insert(role);
-    if (mitigation.length) await trx('mitigation').insert(mitigation);
-    if (response.length) await trx('response').insert(response);
+    // Truncate in FK-safe order so the seed is idempotent — safe to run
+    // against a non-empty DB without duplicate-key errors.
+    await trx('game_log').delete();
+    await trx('game_mitigation').delete();
+    await trx('game_system').delete();
+    await trx('game_injection').delete();
+    await trx('game').delete();
+    await trx('action_role').delete();
+    await trx('injection_response').delete();
+    await trx('curveball').delete();
+    await trx('action').delete();
+    await trx('injection').update({ followup_injection: null });
+    await trx('injection').delete();
+    await trx('response').delete();
+    await trx('mitigation').delete();
+    await trx('role').delete();
+    await trx('dictionary').delete();
+    await trx('location').delete();
+    await trx('system').delete();
+    await trx('scenario').delete();
+
+    // Create the scenario row and tag all static rows with its id.
+    // Exported JSON files do not include scenario_id (it is stripped on
+    // export) so we add it here, mirroring the Airtable import flow.
+    const [scenarioRow] = await trx('scenario')
+      .insert({ slug: scenario, name: manifest.name || scenario })
+      .returning('*');
+    const scenarioId = scenarioRow.id;
+    const tag = (rows) =>
+      rows.map((row) => ({ ...row, scenario_id: scenarioId }));
+
+    // Insert parents first
+    if (system.length) await trx('system').insert(tag(system));
+    if (role.length) await trx('role').insert(tag(role));
+    if (mitigation.length) await trx('mitigation').insert(tag(mitigation));
+    if (response.length) await trx('response').insert(tag(response));
 
     // injection has self-FK followup_injection; do a safe two-pass insert
     if (injection.length) {
-      const withoutFollowups = injection.map((row) => ({
+      const withoutFollowups = tag(injection).map((row) => ({
         ...row,
         followup_injection: null,
       }));
@@ -208,14 +242,14 @@ exports.seed = async (knex) => {
       /* eslint-enable no-await-in-loop */
     }
 
-    if (action.length) await trx('action').insert(action);
-    if (curveball.length) await trx('curveball').insert(curveball);
+    if (action.length) await trx('action').insert(tag(action));
+    if (curveball.length) await trx('curveball').insert(tag(curveball));
     if (dictionary && dictionary.length)
-      await trx('dictionary').insert(dictionary);
+      await trx('dictionary').insert(tag(dictionary));
 
     // Insert joins last
-    if (actionRole.length) await trx('action_role').insert(actionRole);
+    if (actionRole.length) await trx('action_role').insert(tag(actionRole));
     if (injectionResponse.length)
-      await trx('injection_response').insert(injectionResponse);
+      await trx('injection_response').insert(tag(injectionResponse));
   });
 };

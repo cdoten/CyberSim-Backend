@@ -1,0 +1,221 @@
+[
+  {
+    "id": "recd9ibRnRAN8Z2cZ",
+    "description": "Write funding proposal for int'l donor",
+    "type": "hq",
+    "cost": 0,
+    "budget_increase": 400,
+    "poll_increase": 0,
+    "required_systems": [
+      "recXPadDc7sPspdpZ",
+      "recZTp8fGmaQYZi9c"
+    ]
+  },
+  {
+    "id": "recEbrlg0NVQDIbAB",
+    "description": "Send Facebook posts to solicit donations via phones",
+    "type": "hq",
+    "cost": 0,
+    "budget_increase": 400,
+    "poll_increase": 0,
+    "required_systems": [
+      "recl65MUsdHPv4mWj",
+      "recZTp8fGmaQYZi9c"
+    ]
+  },
+  {
+    "id": "recep5BnzpIheo9Gf",
+    "description": "Develop a verification bot for website",
+    "type": "hq",
+    "cost": 500,
+    "budget_increase": 0,
+    "poll_increase": 2,
+    "required_systems": [
+      "recltMBkG5VjLm9lx",
+      "recynXIBsStyEQbzs"
+    ]
+  },
+  {
+    "id": "receXA9ZvEK6Dak9r",
+    "description": "Organize webinar via computers",
+    "type": "local",
+    "cost": 0,
+    "budget_increase": 300,
+    "poll_increase": 0,
+    "required_systems": [
+      "recWCLV98Ee7Wmj0a",
+      "recXPadDc7sPspdpZ"
+    ]
+  },
+  {
+    "id": "recfx3DUZ5TvR37st",
+    "description": "Hold local town hall",
+    "type": "local",
+    "cost": 800,
+    "budget_increase": 0,
+    "poll_increase": 4,
+    "required_systems": [
+      "recWCLV98Ee7Wmj0a",
+      "reclFJ1zlKx41znpB",
+      "recy7ApEd2VqFMg5M"
+    ]
+  },
+  {
+    "id": "recgqJ5E5yUQQszwD",
+    "description": "Arrange director interview on TV",
+    "type": "hq",
+    "cost": 500,
+    "budget_increase": 0,
+    "poll_increase": 2,
+    "required_systems": [
+      "recZTp8fGmaQYZi9c"
+    ]
+  },
+  {
+    "id": "reciLrbiEFAOdjNYv",
+    "description": "Host local event to raise awareness",
+    "type": "local",
+    "cost": 500,
+    "budget_increase": 0,
+    "poll_increase": 2,
+    "required_systems": [
+      "recWCLV98Ee7Wmj0a"
+    ]
+  },
+  {
+    "id": "recNqzUVw7Xxq8pf7",
+    "description": "Host event with celebrity",
+    "type": "hq",
+    "cost": 600,
+    "budget_increase": 0,
+    "poll_increase": 3,
+    "required_systems": [
+      "recynXIBsStyEQbzs",
+      "recXPadDc7sPspdpZ",
+      "recZTp8fGmaQYZi9c"
+    ]
+  },
+  {
+    "id": "recPatxt1TYyNRefR",
+    "description": "Share crowdfunding facebook posts via phones",
+    "type": "local",
+    "cost": 0,
+    "budget_increase": 300,
+    "poll_increase": 0,
+    "required_systems": [
+      "reclFJ1zlKx41znpB",
+      "recy7ApEd2VqFMg5M"
+    ]
+  },
+  {
+    "id": "recRARj8wHtxRtFHd",
+    "description": "Send Facebook posts to solicit donations via computers",
+    "type": "hq",
+    "cost": 0,
+    "budget_increase": 400,
+    "poll_increase": 0,
+    "required_systems": [
+      "recl65MUsdHPv4mWj",
+      "recynXIBsStyEQbzs"
+    ]
+  },
+  {
+    "id": "recRLpxkMgXTW8PlZ",
+    "description": "Publish human rights and China report",
+    "type": "hq",
+    "cost": 500,
+    "budget_increase": 0,
+    "poll_increase": 2,
+    "required_systems": [
+      "recynXIBsStyEQbzs",
+      "recltMBkG5VjLm9lx"
+    ]
+  },
+  {
+    "id": "recrSF9UJePm0LpDn",
+    "description": "Hold conference for CSO leaders",
+    "type": "hq",
+    "cost": 1000,
+    "budget_increase": 0,
+    "poll_increase": 5,
+    "required_systems": [
+      "recynXIBsStyEQbzs",
+      "recWCLV98Ee7Wmj0a",
+      "recZTp8fGmaQYZi9c",
+      "recy7ApEd2VqFMg5M",
+      "recXPadDc7sPspdpZ",
+      "recl65MUsdHPv4mWj",
+      "reclFJ1zlKx41znpB"
+    ]
+  },
+  {
+    "id": "rect4ULhyM2VpT4aX",
+    "description": "Send update newsletter to supporters",
+    "type": "hq",
+    "cost": 0,
+    "budget_increase": 300,
+    "poll_increase": 0,
+    "required_systems": [
+      "recynXIBsStyEQbzs"
+    ]
+  },
+  {
+    "id": "recTDp4HwUDKtrj7s",
+    "description": "Design a local advocacy strategy",
+    "type": "local",
+    "cost": 600,
+    "budget_increase": 0,
+    "poll_increase": 3,
+    "required_systems": [
+      "recWCLV98Ee7Wmj0a",
+      "recy7ApEd2VqFMg5M"
+    ]
+  },
+  {
+    "id": "recuHDUb0E5FHyqe7",
+    "description": "Share crowdfunding facebook posts via computers",
+    "type": "local",
+    "cost": 0,
+    "budget_increase": 300,
+    "poll_increase": 0,
+    "required_systems": [
+      "reclFJ1zlKx41znpB",
+      "recWCLV98Ee7Wmj0a"
+    ]
+  },
+  {
+    "id": "recvkZkDbQbz8Atat",
+    "description": "Solicit donations via WhatsApp",
+    "type": "local",
+    "cost": 0,
+    "budget_increase": 400,
+    "poll_increase": 0,
+    "required_systems": [
+      "recy7ApEd2VqFMg5M"
+    ]
+  },
+  {
+    "id": "recwYP42s6EOWEl5u",
+    "description": "Send fundraising email",
+    "type": "hq",
+    "cost": 0,
+    "budget_increase": 300,
+    "poll_increase": 0,
+    "required_systems": [
+      "recXPadDc7sPspdpZ",
+      "recynXIBsStyEQbzs"
+    ]
+  },
+  {
+    "id": "recXLQM0AamHI5j4h",
+    "description": "Organize webinar via phones",
+    "type": "local",
+    "cost": 0,
+    "budget_increase": 300,
+    "poll_increase": 0,
+    "required_systems": [
+      "recXPadDc7sPspdpZ",
+      "recy7ApEd2VqFMg5M"
+    ]
+  }
+]

@@ -64,8 +64,8 @@ The `appXXXXXXXXXXXXXX` portion is your Base ID.
 #### Common confusion
 
 - app... → Base ID (correct)
-- tbl... → Table ID
-- viw... → View ID
+- tbl... → Table ID (wrong)
+- viw... → View ID (wrong)
 
 ### Creating an Access Token (PAT)
 
@@ -86,8 +86,8 @@ CyberSim connects to Airtable using a Personal Access Token (PAT), which is a se
 
 For CyberSim, select:
 
-– data.records:read → allows the backend to read scenario content
-– (optional) schema.bases:read → allows reading table structure (useful for debugging)
+- data.records:read → allows the backend to read scenario content
+- (optional) schema.bases:read → allows reading table structure (useful for debugging)
 
 
 **Access** - define which specific Airtable bases the token can interact with. If you do not add the base here, the token will not work.
