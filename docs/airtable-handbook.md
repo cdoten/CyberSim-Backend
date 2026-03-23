@@ -23,16 +23,21 @@ To import current Airtable data into the database:
 This requires:
 
 - AIRTABLE_ACCESS_TOKEN
-- AIRTABLE_BASE_ID
+- AIRTABLE_BASE_IDS
 - IMPORT_PASSWORD
+
+The scenario to import is determined automatically from the subdomain
+(e.g. `cso.cybersim.app` imports the `cso` scenario). The Airtable
+credentials are backend environment variables — the UI only asks for
+the `IMPORT_PASSWORD`.
 
 ## Finding Your Airtable Credentials
 
-To connect Airtable to CyberSim, you need 
+To connect Airtable to CyberSim, you need:
 
-- AIRTABLE_BASE_ID (The unique identifier of the Airtable "base" or database/spreadsheet for the Cybersim)
-- AIRTABLE_ACCESS_TOKEN (Personal Access Token / PAT)
-- IMPORT_PASSWORD (manually configured in the app's environment)
+- `AIRTABLE_BASE_IDS` — Comma-separated `slug:baseId` pairs mapping each scenario to its Airtable base (e.g. `cso:appXXXXXX,tnr:appYYYYYY`)
+- `AIRTABLE_ACCESS_TOKEN` — A Personal Access Token (PAT) with access to all configured bases
+- `IMPORT_PASSWORD` — A password manually configured in the backend environment that authorizes imports via the UI
 
 These are not prominently exposed in Airtable’s UI, so to capture them follow the steps below.
 
@@ -47,9 +52,13 @@ These are not prominently exposed in Airtable’s UI, so to capture them follow 
 
 The part starting with `app` is your Base ID.
 
-Example:
+Example entry in `AIRTABLE_BASE_IDS`:
 
-    AIRTABLE_BASE_ID=appUBqXDEAK06rYeC
+    cso:appUBqXDEAK06rYeC
+
+For multiple scenarios, add comma-separated pairs:
+
+    AIRTABLE_BASE_IDS=cso:appUBqXDEAK06rYeC,tnr:appYYYYYYYYYYYYYY
 
 #### Option B: From the API docs
 
@@ -80,25 +89,21 @@ CyberSim connects to Airtable using a Personal Access Token (PAT), which is a se
 
 **Name** - Give the token a descriptive name so you can recognize it later:
 
-    CyberSim - <scenario name>
+    CyberSim Backend
 
 **Scopes** - define what actions the token is allowed to perform. Without the right scopes, the import process will fail.
 
-For CyberSim, select:
+For CyberSim, select both:
 
-- data.records:read → allows the backend to read scenario content
-- (optional) schema.bases:read → allows reading table structure (useful for debugging)
+- `data.records:read` — allows the backend to read scenario content (required for import)
+- `schema.bases:read` — allows reading table structure (required for the `/health/airtable` endpoint)
 
-
-**Access** - define which specific Airtable bases the token can interact with. If you do not add the base here, the token will not work.
+**Access** - define which Airtable bases the token can interact with. If you do not add a base here, imports for that scenario will fail.
 
 - Choose “Specific bases”
+- Click “Add a base” for **each scenario base** you want this token to cover
 
-- Click “Add a base”
-
-Select your scenario base
-
-This ensures the token can only access the intended scenario data.
+A single PAT can cover multiple bases, so you only need one token even if you run multiple scenarios.
 
 
 #### Save the token
@@ -129,6 +134,8 @@ or:
 
     https://<your-api-host>/health/airtable
 
+> **Note:** This endpoint checks connectivity using only the **first** base listed in `AIRTABLE_BASE_IDS`. A passing result confirms your token and that base are reachable, but does not verify every scenario base. Use the direct test below to check a specific base.
+
 #### Expected success response
 
     {
@@ -143,7 +150,7 @@ Missing variables:
 
     {
       "ok": false,
-      "message": "Missing AIRTABLE_ACCESS_TOKEN or AIRTABLE_BASE_ID"
+      "message": "Missing AIRTABLE_ACCESS_TOKEN or AIRTABLE_BASE_IDS"
     }
 
 401 error:
@@ -152,29 +159,76 @@ Missing variables:
 
 403 error:
 
-- Token lacks access to base
+- Token lacks access to this base (check the Access list on your PAT)
 
 404 error:
 
 - Incorrect Base ID
 
-### Optional direct test
+### Direct test for a specific base
 
-    curl https://api.airtable.com/v0/meta/bases/YOUR_BASE_ID/tables \
-      -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+To verify a particular scenario's base independently of the health endpoint:
+
+    curl https://api.airtable.com/v0/meta/bases/<BASE_ID>/tables \
+      -H "Authorization: Bearer <YOUR_ACCESS_TOKEN>"
+
+Replace `<BASE_ID>` with the `app...` value for the scenario you want to test (from `AIRTABLE_BASE_IDS`). A 200 response with a `tables` array confirms that base is accessible.
 
 ## Dataset Snapshots
 
-To export a versioned dataset snapshot into the repository:
+After a successful Airtable import, you can export a versioned snapshot of the database into the repository so it can be restored later without Airtable access:
 
-    npm run snapshot:export
+    SEED_TAG=cso@2026-03-03.1 npm run dataset:export
 
-Snapshots are stored under:
+The tag format is `<scenario>@<revision>`. Snapshots are stored under:
 
     seeds/datasets/<scenario>/<revision>/
 
+To restore a snapshot:
 
-Snapshots allow scenarios to be versioned and reproduced later.
+    SEED_TAG=cso@2026-03-03.1 npm run reset-db:dataset
+
+Snapshots allow scenarios to be versioned, shared, and reproduced without a live Airtable connection.
+
+## Adding a New Scenario
+
+To add a second (or third) scenario to a running CyberSim deployment:
+
+### 1. Create the Airtable base
+
+Duplicate or create a new Airtable base for the scenario. Note its Base ID (`app...` from the URL).
+
+### 2. Grant the PAT access to the new base
+
+In the Airtable Developer Hub, edit your existing Personal Access Token and add the new base under Access → Specific bases. No new token is needed.
+
+### 3. Update backend environment variables
+
+Add the new slug:baseId pair to `AIRTABLE_BASE_IDS`:
+
+    AIRTABLE_BASE_IDS=cso:appXXXXXX,tnr:appYYYYYY
+
+Add the new subdomain to `UI_ORIGINS`:
+
+    UI_ORIGINS=https://cso.cybersim.app,https://tnr.cybersim.app
+
+### 4. Set up the frontend for the new subdomain
+
+In AWS Amplify, add a custom domain for the new subdomain (e.g. `tnr.cybersim.app`) pointing at the same Amplify app. Set the environment variable for that domain:
+
+    REACT_APP_SCENARIO_SLUG=tnr
+
+In Cloudflare DNS, add a CNAME for `tnr.cybersim.app` pointing at the Amplify domain.
+
+### 5. Run the import
+
+Navigate to `https://tnr.cybersim.app/scenario/import`, enter the `IMPORT_PASSWORD`, and click Import. The backend will detect the `tnr` slug from the subdomain, look up its base ID, and load the data.
+
+### 6. Verify
+
+    https://api.cybersim.app/health/airtable
+
+Then test the direct connection for the new base (see "Direct test for a specific base" above).
 
 
 ## Airtable Content Rules

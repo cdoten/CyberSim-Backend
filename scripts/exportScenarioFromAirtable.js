@@ -16,6 +16,7 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const db = require('../src/models/db');
+const { getAirtableBaseId } = require('../src/util/airtable');
 
 function parseArgs(argv) {
   const out = {};
@@ -161,7 +162,7 @@ async function exportTable(tableName, orderBy = 'id') {
       name: scenarioRow?.name || scenario,
       exported_at: new Date().toISOString(),
       airtable: {
-        base_id: process.env.AIRTABLE_BASE_ID || null,
+        base_id: (() => { try { return getAirtableBaseId(scenario); } catch (_) { return null; } })(),
       },
       db: {
         latest_migration: await latestMigrationId(),

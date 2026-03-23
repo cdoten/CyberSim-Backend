@@ -222,14 +222,14 @@ async function migrate(accessToken, baseId, scenarioSlug = 'cso') {
   await db.migrate.rollback({}, true);
   await db.migrate.latest();
 
-  // Look up the scenario row created by the migration so we can tag all
-  // imported rows with its id.
-  const scenario = await db('scenario').where({ slug: scenarioSlug }).first();
-  if (!scenario) {
-    throw new Error(
-      `Scenario "${scenarioSlug}" not found after migration. Check migration 20260313000100.`,
-    );
-  }
+  // Upsert the scenario row so any slug works — not just 'cso' which is the
+  // only slug migration 1 seeds. If the slug already exists (e.g. 'cso' from
+  // the migration) the merge is a no-op and we just get the existing row back.
+  const [scenario] = await db('scenario')
+    .insert({ slug: scenarioSlug, name: scenarioSlug })
+    .onConflict('slug')
+    .merge()
+    .returning('*');
   const scenarioId = scenario.id;
 
   // Tag every row with scenario_id before DB validation and insert.
@@ -288,7 +288,7 @@ async function migrate(accessToken, baseId, scenarioSlug = 'cso') {
   // Write out information about the updates
   logger.info(
     {
-      baseId: process.env.AIRTABLE_BASE_ID,
+      baseId,
       mitigationCount: sqlMitigations.length,
       responseCount: sqlResponses.length,
       injectionCount: sqlInjections.length,

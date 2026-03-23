@@ -11,21 +11,16 @@ const { getResponses } = require('./models/response');
 const { getInjections } = require('./models/injection');
 const { getActions } = require('./models/action');
 const importScenarioFromAirtable = require('./util/importScenarioFromAirtable');
+const { getAirtableBaseId } = require('./util/airtable');
 const config = require('./config');
 const { transformValidationErrors } = require('./util/errors');
 
 const app = express();
 
-console.log('Loaded app.js commit:', process.env.GIT_COMMIT || 'unknown');
-console.log('Route enabled: POST /scenario/import');
+logger.info({ commit: process.env.GIT_COMMIT || 'unknown' }, 'App loaded');
 
 app.use(helmet());
-app.use(cors());
-app.use(
-  expressPino({
-    logger,
-  }),
-);
+app.use(expressPino({ logger }));
 app.use(bodyParser.json());
 
 app.use((req, res, next) => {
@@ -84,14 +79,18 @@ app.get('/health', async (req, res) => {
 app.get('/health/airtable', async (req, res) => {
   try {
     const token = process.env.AIRTABLE_ACCESS_TOKEN;
-    const baseId = process.env.AIRTABLE_BASE_ID;
+    const baseIdsRaw = process.env.AIRTABLE_BASE_IDS || '';
 
-    if (!token || !baseId) {
+    if (!token || !baseIdsRaw) {
       return res.status(500).json({
         ok: false,
-        message: 'Missing AIRTABLE_ACCESS_TOKEN or AIRTABLE_BASE_ID',
+        message: 'Missing AIRTABLE_ACCESS_TOKEN or AIRTABLE_BASE_IDS',
       });
     }
+
+    // Use the first configured base as a connectivity sanity check.
+    const firstEntry = baseIdsRaw.split(',')[0].trim();
+    const baseId = firstEntry.split(':')[1];
 
     const url = `https://api.airtable.com/v0/meta/bases/${baseId}/tables`;
     const response = await fetch(url, {
@@ -203,13 +202,18 @@ app.post('/scenario/import', async (req, res) => {
   }
 
   const accessToken = process.env.AIRTABLE_ACCESS_TOKEN;
-  const baseId = process.env.AIRTABLE_BASE_ID;
 
-  if (!accessToken || !baseId) {
+  if (!accessToken) {
     return res.status(500).send({
-      message:
-        'Server is missing Airtable configuration (AIRTABLE_ACCESS_TOKEN / AIRTABLE_BASE_ID).',
+      message: 'Server is missing Airtable configuration (AIRTABLE_ACCESS_TOKEN).',
     });
+  }
+
+  let baseId;
+  try {
+    baseId = getAirtableBaseId(scenarioSlug);
+  } catch (err) {
+    return res.status(500).send({ message: err.message });
   }
 
   try {
@@ -251,7 +255,7 @@ app.post('/scenario/import', async (req, res) => {
       });
     }
 
-    logger.error(err);
+    logger.error({ message: err.message, stack: err.stack }, 'Import failed');
     return res.status(500).send({
       message:
         'There was an internal server error during the migration! Please contact the developers to fix it.',

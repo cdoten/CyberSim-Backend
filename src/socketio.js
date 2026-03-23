@@ -47,18 +47,17 @@ module.exports = (http) => {
 
     socket.on(
       SocketEvents.CREATEGAME,
-      async (id, initialBudget, initialPollPercentage, callback) => {
+      async (id, initialBudget, initialPollPercentage, scenarioSlug, callback) => {
         logger.info('CREATEGAME: %s', id);
         try {
-          // scenarioSlug will eventually come from the frontend (step 12 of
-          // the multi-scenario plan). For now it defaults to 'cso' so the
-          // existing UI continues to work without any frontend changes.
-          const scenarioSlug = process.env.SCENARIO_SLUG || 'cso';
+          // scenarioSlug comes from the frontend (derived from the subdomain).
+          // Fall back to the SCENARIO_SLUG env var if not provided, then 'cso'.
+          const resolvedSlug = scenarioSlug || process.env.SCENARIO_SLUG || 'cso';
           const game = await createGame(
             id,
             initialBudget,
             initialPollPercentage,
-            scenarioSlug,
+            resolvedSlug,
           );
           if (gameId) {
             await socket.leave(gameId);
@@ -80,7 +79,9 @@ module.exports = (http) => {
       },
     );
 
-    socket.on(SocketEvents.JOINGAME, async (id, _, __, callback) => {
+    // enterGame() on the client sends: id, initialBudget, initialPollPercentage, scenarioSlug, callback
+    // JOINGAME ignores everything except id and callback — the game already exists with its scenario.
+    socket.on(SocketEvents.JOINGAME, async (id, _, __, _scenarioSlug, callback) => {
       logger.info('JOINGAME: %s', id);
       try {
         const game = await getGame(id);
