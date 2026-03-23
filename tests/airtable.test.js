@@ -19,7 +19,8 @@ describe('getAirtableBaseId', () => {
   });
 
   it('returns the correct base ID when multiple scenarios are configured', () => {
-    process.env.AIRTABLE_BASE_IDS = 'cso:appAAAAAAA,tnr:appBBBBBBB,eoeoq:appCCCCCCC';
+    process.env.AIRTABLE_BASE_IDS =
+      'cso:appAAAAAAA,tnr:appBBBBBBB,eoeoq:appCCCCCCC';
     expect(getAirtableBaseId('tnr')).toBe('appBBBBBBB');
     expect(getAirtableBaseId('eoeoq')).toBe('appCCCCCCC');
   });

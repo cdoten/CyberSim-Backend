@@ -162,7 +162,13 @@ async function exportTable(tableName, orderBy = 'id') {
       name: scenarioRow?.name || scenario,
       exported_at: new Date().toISOString(),
       airtable: {
-        base_id: (() => { try { return getAirtableBaseId(scenario); } catch (_) { return null; } })(),
+        base_id: (() => {
+          try {
+            return getAirtableBaseId(scenario);
+          } catch (_) {
+            return null;
+          }
+        })(),
       },
       db: {
         latest_migration: await latestMigrationId(),

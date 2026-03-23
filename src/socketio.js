@@ -47,12 +47,19 @@ module.exports = (http) => {
 
     socket.on(
       SocketEvents.CREATEGAME,
-      async (id, initialBudget, initialPollPercentage, scenarioSlug, callback) => {
+      async (
+        id,
+        initialBudget,
+        initialPollPercentage,
+        scenarioSlug,
+        callback,
+      ) => {
         logger.info('CREATEGAME: %s', id);
         try {
           // scenarioSlug comes from the frontend (derived from the subdomain).
           // Fall back to the SCENARIO_SLUG env var if not provided, then 'cso'.
-          const resolvedSlug = scenarioSlug || process.env.SCENARIO_SLUG || 'cso';
+          const resolvedSlug =
+            scenarioSlug || process.env.SCENARIO_SLUG || 'cso';
           const game = await createGame(
             id,
             initialBudget,
@@ -81,24 +88,27 @@ module.exports = (http) => {
 
     // enterGame() on the client sends: id, initialBudget, initialPollPercentage, scenarioSlug, callback
     // JOINGAME ignores everything except id and callback — the game already exists with its scenario.
-    socket.on(SocketEvents.JOINGAME, async (id, _, __, _scenarioSlug, callback) => {
-      logger.info('JOINGAME: %s', id);
-      try {
-        const game = await getGame(id);
-        if (!game) {
-          return callback({ error: 'Game not found!' });
+    socket.on(
+      SocketEvents.JOINGAME,
+      async (id, _, __, _scenarioSlug, callback) => {
+        logger.info('JOINGAME: %s', id);
+        try {
+          const game = await getGame(id);
+          if (!game) {
+            return callback({ error: 'Game not found!' });
+          }
+          if (gameId) {
+            await socket.leave(gameId);
+          }
+          await socket.join(id);
+          gameId = id;
+          return callback({ game });
+        } catch (error) {
+          logger.error('JOINGAME ERROR: %s', error);
+          return callback({ error: 'Server error on join game!' });
         }
-        if (gameId) {
-          await socket.leave(gameId);
-        }
-        await socket.join(id);
-        gameId = id;
-        return callback({ game });
-      } catch (error) {
-        logger.error('JOINGAME ERROR: %s', error);
-        return callback({ error: 'Server error on join game!' });
-      }
-    });
+      },
+    );
 
     socket.on(
       SocketEvents.CHANGEMITIGATION,

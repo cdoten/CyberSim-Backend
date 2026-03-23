@@ -205,7 +205,8 @@ app.post('/scenario/import', async (req, res) => {
 
   if (!accessToken) {
     return res.status(500).send({
-      message: 'Server is missing Airtable configuration (AIRTABLE_ACCESS_TOKEN).',
+      message:
+        'Server is missing Airtable configuration (AIRTABLE_ACCESS_TOKEN).',
     });
   }
 
