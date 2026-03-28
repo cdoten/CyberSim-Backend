@@ -178,7 +178,7 @@ Replace `<BASE_ID>` with the `app...` value for the scenario you want to test (f
 
 After a successful Airtable import, you can export a versioned snapshot of the database into the repository so it can be restored later without Airtable access:
 
-    SEED_TAG=cso@2026-03-03.1 npm run dataset:export
+    SCENARIO_TAG=cso@2026-03-03.1 npm run dataset:export
 
 The tag format is `<scenario>@<revision>`. Snapshots are stored under:
 
@@ -186,7 +186,7 @@ The tag format is `<scenario>@<revision>`. Snapshots are stored under:
 
 To restore a snapshot:
 
-    SEED_TAG=cso@2026-03-03.1 npm run reset-db:dataset
+    SCENARIO_TAG=cso@2026-03-03.1 npm run reset-db:dataset
 
 Snapshots allow scenarios to be versioned, shared, and reproduced without a live Airtable connection.
 

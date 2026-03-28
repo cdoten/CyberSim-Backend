@@ -141,7 +141,7 @@ seeds/datasets/cso/2026-03-03.1/
 Load a dataset snapshot:
 
 ```bash
-SEED_TAG=cso@2026-03-03.1 npm run reset-db:dataset
+SCENARIO_TAG=cso@2026-03-03.1 npm run reset-db:dataset
 ```
 
 This will:
@@ -155,7 +155,7 @@ This will:
 After importing from Airtable, export a versioned snapshot of the current database content into the repository so it can be reloaded later without Airtable access:
 
 ```bash
-SEED_TAG=cso@2026-03-03.1 npm run dataset:export
+SCENARIO_TAG=cso@2026-03-03.1 npm run dataset:export
 ```
 
 The tag format is `<scenario>@<revision>`. This writes a snapshot to:

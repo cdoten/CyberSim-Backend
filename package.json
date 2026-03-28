@@ -8,7 +8,6 @@
   "engines": {
     "node": "22.x"
   },
-{
   "scripts": {
     "prepare": "husky || true",
     "dev": "LOG_LEVEL=info nodemon --watch .env -r dotenv/config index.js",
@@ -23,12 +22,11 @@
     "rebuild-db:schema": "knex migrate:rollback --all && knex migrate:latest",
     "seed:fixtures": "knex seed:run --specific 01_fixture_seed.js",
     "seed:scenario": "knex seed:run --specific 02_scenario_seed.js",
-    "save:scenario": "node -r dotenv/config scripts/save-scenario-revision.js"
+    "save:scenario": "node -r dotenv/config scripts/save-scenario-revision.js",
     "reset-db:fixtures": "npm run rebuild-db:schema && npm run seed:fixtures",
     "reset-db:scenario": "npm run rebuild-db:schema && npm run seed:scenario",
     "build-deploy": "zip -r deploy.zip . -x \"node_modules/*\" -x \"*.env*\" -x \".git/*\" -x \"*.zip\" -x \".vscode/*\""
-  }
-}
+  },
   "dependencies": {
     "@types/jest": "^26.0.8",
     "airtable": "^0.11.2",

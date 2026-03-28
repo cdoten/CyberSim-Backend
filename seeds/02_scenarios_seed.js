@@ -1,10 +1,10 @@
-// seeds/02_dataset_seed.js
+// seeds/02_scenario_seed.js
 //
-// Loads a versioned dataset from:
-//   seeds/datasets/<scenario>/<revision>/data/*.json
+// Loads a versioned scenario revision from:
+//   seeds/scenarios/<scenario>/<revision>/data/*.json
 //
-// Choose dataset via env var:
-//   SEED_TAG="scenario@revision"  (e.g., "cso@2026-03-03.1")
+// Choose the scenario revision via env var:
+//   SCENARIO_TAG="scenario@revision"  (e.g., "cso@2026-03-03.1")
 
 const fs = require('fs');
 const path = require('path');
@@ -14,10 +14,10 @@ function formatBullets(items) {
   return items.map((x) => `  - ${x}`).join('\n');
 }
 
-function parseSeedTag(tag) {
+function parseScenarioTag(tag) {
   if (!tag || typeof tag !== 'string' || !tag.includes('@')) {
     throw new Error(
-      'SEED_TAG must be set to "scenario@revision" (e.g., SEED_TAG="cso@2026-03-03.1")',
+      'SCENARIO_TAG must be set to "scenario@revision" (e.g., SCENARIO_TAG="cso@2026-03-03.1")',
     );
   }
 
@@ -25,7 +25,7 @@ function parseSeedTag(tag) {
 
   if (!scenario || !revision) {
     throw new Error(
-      `Invalid SEED_TAG format: "${tag}". Expected "scenario@revision".`,
+      `Invalid SCENARIO_TAG format: "${tag}". Expected "scenario@revision".`,
     );
   }
 
@@ -49,8 +49,8 @@ function readJson(absPath) {
   return JSON.parse(raw);
 }
 
-function loadDatasetJson(datasetDir, filename) {
-  const absPath = path.join(datasetDir, 'data', filename);
+function loadScenarioJson(scenarioDir, filename) {
+  const absPath = path.join(scenarioDir, 'data', filename);
   if (!fs.existsSync(absPath)) return null;
   return readJson(absPath);
 }
@@ -62,12 +62,12 @@ function verifyManifestMatchesTag({ scenario, revision }, manifest) {
   if (mScenario !== scenario || mRevision !== revision) {
     throw new Error(
       [
-        'Dataset manifest mismatch.',
-        `- SEED_TAG:  ${scenario}@${revision}`,
-        `- Manifest:  ${mScenario}@${mRevision}`,
+        'Scenario revision manifest mismatch.',
+        `- SCENARIO_TAG: ${scenario}@${revision}`,
+        `- Manifest:     ${mScenario}@${mRevision}`,
         '',
-        'The dataset folder does not match its manifest.',
-        'This usually means the dataset was copied or renamed incorrectly.',
+        'The scenario revision folder does not match its manifest.',
+        'This usually means the revision was copied or renamed incorrectly.',
       ].join('\n'),
     );
   }
@@ -83,54 +83,55 @@ async function getDbLatestMigration(knex) {
 
 async function verifyMigrationMatches(knex, manifest) {
   const dbLatest = await getDbLatestMigration(knex);
-  const datasetLatest = manifest?.db?.latest_migration || null;
+  const scenarioLatest = manifest?.db?.latest_migration || null;
 
   // If either is missing, don't block seeding.
-  if (!dbLatest || !datasetLatest) return;
+  if (!dbLatest || !scenarioLatest) return;
 
-  if (dbLatest !== datasetLatest) {
+  if (dbLatest !== scenarioLatest) {
     throw new Error(
       [
-        'Dataset migration mismatch.',
-        `- DB latest migration:       ${dbLatest}`,
-        `- Dataset expects migration: ${datasetLatest}`,
+        'Scenario revision migration mismatch.',
+        `- DB latest migration:              ${dbLatest}`,
+        `- Scenario revision expects:        ${scenarioLatest}`,
         '',
         'Fix:',
-        '1) Run `npm run reset-db:dataset` (rebuild schema), OR',
-        '2) Re-export the dataset under the current schema.',
+        '1) Run `npm run reset-db:scenario` (rebuild schema), OR',
+        '2) Re-save the scenario revision under the current schema.',
       ].join('\n'),
     );
   }
 }
 
 exports.seed = async (knex) => {
-  // Require SEED_TAG to be explicitly set. A silent return here is dangerous
-  // because reset-db:dataset runs reset:migrations first — if the seed then
+  // Require SCENARIO_TAG to be explicitly set. A silent return here is dangerous
+  // because reset-db:scenario rebuilds the schema first — if this seed then
   // does nothing, the DB is left empty with no scenario row.
-  if (!process.env.SEED_TAG) {
+  if (!process.env.SCENARIO_TAG) {
     throw new Error(
-      'SEED_TAG is not set. Use: SEED_TAG="scenario@revision" npm run seed:dataset',
+      'SCENARIO_TAG is not set. Use: SCENARIO_TAG="scenario@revision" npm run seed:scenario',
     );
   }
 
-  const { scenario, revision } = parseSeedTag(process.env.SEED_TAG);
+  const { scenario, revision } = parseScenarioTag(process.env.SCENARIO_TAG);
 
-  // This file lives in `seeds/`, so datasets are in `seeds/datasets/...`
-  const datasetsRoot = path.join(__dirname, 'datasets');
-  const datasetDir = path.join(datasetsRoot, scenario, revision);
-  const manifestPath = path.join(datasetDir, 'manifest.json');
+  // This file lives in `seeds/`, so scenario revisions are in
+  // `seeds/scenarios/...`
+  const scenariosRoot = path.join(__dirname, 'scenarios');
+  const scenarioDir = path.join(scenariosRoot, scenario, revision);
+  const manifestPath = path.join(scenarioDir, 'manifest.json');
 
-  if (!fs.existsSync(datasetDir)) {
-    const scenarios = listDirs(datasetsRoot);
-    const revisions = listDirs(path.join(datasetsRoot, scenario));
+  if (!fs.existsSync(scenarioDir)) {
+    const scenarios = listDirs(scenariosRoot);
+    const revisions = listDirs(path.join(scenariosRoot, scenario));
 
     throw new Error(
       [
-        'Dataset not found for SEED_TAG.',
-        `- SEED_TAG: ${scenario}@${revision}`,
-        `- Expected folder: ${datasetDir}`,
+        'Scenario revision not found for SCENARIO_TAG.',
+        `- SCENARIO_TAG: ${scenario}@${revision}`,
+        `- Expected folder: ${scenarioDir}`,
         '',
-        'Available scenarios under seeds/datasets:',
+        'Available scenarios under seeds/scenarios:',
         formatBullets(scenarios),
         '',
         `Available revisions for scenario "${scenario}" (if it exists):`,
@@ -138,8 +139,8 @@ exports.seed = async (knex) => {
         '',
         'Fix:',
         '1) Choose one of the available scenario@revision tags above, OR',
-        '2) Export a dataset:',
-        `   npm run dataset:export -- --tag ${scenario}@${revision}`,
+        '2) Save a scenario revision:',
+        `   npm run save:scenario -- --tag ${scenario}@${revision}`,
       ].join('\n'),
     );
   }
@@ -147,38 +148,41 @@ exports.seed = async (knex) => {
   if (!fs.existsSync(manifestPath)) {
     throw new Error(
       [
-        'Dataset manifest.json not found.',
-        `- SEED_TAG: ${scenario}@${revision}`,
+        'Scenario revision manifest.json not found.',
+        `- SCENARIO_TAG: ${scenario}@${revision}`,
         `- Expected: ${manifestPath}`,
         '',
-        'This usually means the dataset export is incomplete.',
+        'This usually means the scenario revision save is incomplete.',
       ].join('\n'),
     );
   }
 
   const manifest = readJson(manifestPath);
 
-  console.log(`Loading dataset ${scenario}@${revision} from ${datasetDir}`);
+  // eslint-disable-next-line no-console
+  console.log(
+    `Loading scenario revision ${scenario}@${revision} from ${scenarioDir}`,
+  );
 
   verifyManifestMatchesTag({ scenario, revision }, manifest);
   await verifyMigrationMatches(knex, manifest);
 
   // Load tables (missing file => empty array, except dictionary which is optional)
-  const system = loadDatasetJson(datasetDir, 'system.json') || [];
-  const role = loadDatasetJson(datasetDir, 'role.json') || [];
-  const mitigation = loadDatasetJson(datasetDir, 'mitigation.json') || [];
-  const response = loadDatasetJson(datasetDir, 'response.json') || [];
-  const injection = loadDatasetJson(datasetDir, 'injection.json') || [];
-  const action = loadDatasetJson(datasetDir, 'action.json') || [];
-  const curveball = loadDatasetJson(datasetDir, 'curveball.json') || [];
-  const dictionary = loadDatasetJson(datasetDir, 'dictionary.json'); // optional
+  const system = loadScenarioJson(scenarioDir, 'system.json') || [];
+  const role = loadScenarioJson(scenarioDir, 'role.json') || [];
+  const mitigation = loadScenarioJson(scenarioDir, 'mitigation.json') || [];
+  const response = loadScenarioJson(scenarioDir, 'response.json') || [];
+  const injection = loadScenarioJson(scenarioDir, 'injection.json') || [];
+  const action = loadScenarioJson(scenarioDir, 'action.json') || [];
+  const curveball = loadScenarioJson(scenarioDir, 'curveball.json') || [];
+  const dictionary = loadScenarioJson(scenarioDir, 'dictionary.json'); // optional
 
-  const actionRole = loadDatasetJson(datasetDir, 'action_role.json') || [];
+  const actionRole = loadScenarioJson(scenarioDir, 'action_role.json') || [];
   const injectionResponse =
-    loadDatasetJson(datasetDir, 'injection_response.json') || [];
+    loadScenarioJson(scenarioDir, 'injection_response.json') || [];
 
   await knex.transaction(async (trx) => {
-    // Truncate in FK-safe order so the seed is idempotent — safe to run
+    // Delete in FK-safe order so the seed is idempotent — safe to run
     // against a non-empty DB without duplicate-key errors.
     await trx('game_log').delete();
     await trx('game_mitigation').delete();
@@ -200,8 +204,8 @@ exports.seed = async (knex) => {
     await trx('scenario').delete();
 
     // Create the scenario row and tag all static rows with its id.
-    // Exported JSON files do not include scenario_id (it is stripped on
-    // export) so we add it here, mirroring the Airtable import flow.
+    // Saved JSON files do not include scenario_id (it is stripped on save)
+    // so we add it here, mirroring the Airtable import flow.
     const [scenarioRow] = await trx('scenario')
       .insert({ slug: scenario, name: manifest.name || scenario })
       .returning('*');
@@ -231,25 +235,25 @@ exports.seed = async (knex) => {
           followup_injection: row.followup_injection,
         }));
 
-      /* eslint-disable no-await-in-loop */
-      /* eslint-disable no-restricted-syntax */
-      for (const row of followups) {
-        await trx('injection')
+      const followupUpdates = followups.map((row) =>
+        trx('injection')
           .where({ id: row.id })
-          .update({ followup_injection: row.followup_injection });
-      }
-      /* eslint-enable no-restricted-syntax */
-      /* eslint-enable no-await-in-loop */
+          .update({ followup_injection: row.followup_injection }),
+      );
+
+      await Promise.all(followupUpdates);
     }
 
     if (action.length) await trx('action').insert(tag(action));
     if (curveball.length) await trx('curveball').insert(tag(curveball));
-    if (dictionary && dictionary.length)
+    if (dictionary && dictionary.length) {
       await trx('dictionary').insert(tag(dictionary));
+    }
 
     // Insert joins last
     if (actionRole.length) await trx('action_role').insert(tag(actionRole));
-    if (injectionResponse.length)
+    if (injectionResponse.length) {
       await trx('injection_response').insert(tag(injectionResponse));
+    }
   });
 };

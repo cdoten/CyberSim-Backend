@@ -76,7 +76,9 @@ async function exportTableForScenario(scenarioId, tableName, orderBy = 'id') {
 }
 
 async function saveScenarioRevision({ scenarioSlug, scenarioRevision }) {
-  const scenarioRow = await db('scenario').where({ slug: scenarioSlug }).first();
+  const scenarioRow = await db('scenario')
+    .where({ slug: scenarioSlug })
+    .first();
 
   if (!scenarioRow) {
     throw new Error(`Scenario not found: "${scenarioSlug}"`);
@@ -147,10 +149,7 @@ async function saveScenarioRevision({ scenarioSlug, scenarioRevision }) {
   writeJson(path.join(dataDir, 'action.json'), action);
   writeJson(path.join(dataDir, 'curveball.json'), curveball);
   writeJson(path.join(dataDir, 'action_role.json'), actionRole);
-  writeJson(
-    path.join(dataDir, 'injection_response.json'),
-    injectionResponse,
-  );
+  writeJson(path.join(dataDir, 'injection_response.json'), injectionResponse);
 
   if (dictionary) {
     writeJson(path.join(dataDir, 'dictionary.json'), dictionary);

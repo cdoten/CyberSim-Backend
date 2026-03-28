@@ -462,7 +462,7 @@ npm run seed
 Dataset seed:
 
 ``` bash
-SEED_TAG=cso@YYYY-MM-DD.X npm run seed:dataset
+SCENARIO_TAG=cso@YYYY-MM-DD.X npm run seed:dataset
 ```
 
 ## Logging and Troubleshooting

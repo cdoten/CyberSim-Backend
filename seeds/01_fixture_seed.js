@@ -6,7 +6,7 @@
 const seedTestData = require('../tests/seedTestData');
 
 exports.seed = async (knex) => {
-  if (process.env.SEED_TAG) {
+  if (process.env.SCENARIO_TAG) {
     // Skip fixture when a dataset is requested
     return;
   }

@@ -52,11 +52,13 @@ async function replaceScenarioContent({
         followup_injection: row.followup_injection,
       }));
 
-    for (const row of followups) {
-      await trx('injection')
+    const followupUpdates = followups.map((row) =>
+      trx('injection')
         .where({ id: row.id, scenario_id: scenarioId })
-        .update({ followup_injection: row.followup_injection });
-    }
+        .update({ followup_injection: row.followup_injection }),
+    );
+
+    await Promise.all(followupUpdates);
   }
 
   if (actions.length) await trx('action').insert(actions);
