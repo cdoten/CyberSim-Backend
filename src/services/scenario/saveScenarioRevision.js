@@ -1,5 +1,5 @@
 /**
- * 
+ *
  * Save the current static content for one scenario from the database into a
  * versioned scenario revision on disk.
  *
@@ -93,8 +93,11 @@ async function exportTableForScenario(scenarioId, tableName, orderBy = 'id') {
   return rows.map(normalizeRow);
 }
 
-async function saveScenarioRevision({ scenarioSlug, scenarioRevision }) {
-  const scenarioRow = await db('scenario')
+async function saveScenarioRevision({
+  scenarioSlug,
+  scenarioRevision,
+  rootDir,
+}) {  const scenarioRow = await db('scenario')
     .where({ slug: scenarioSlug })
     .first();
 
@@ -102,14 +105,14 @@ async function saveScenarioRevision({ scenarioSlug, scenarioRevision }) {
     throw new Error(`Scenario not found: "${scenarioSlug}"`);
   }
 
-  const rootDir = path.join(__dirname, '..', '..', '..');
-  const scenarioDir = path.join(
-    rootDir,
-    'seeds',
-    'scenarios',
-    scenarioSlug,
-    scenarioRevision,
-  );
+const repoRoot = rootDir || path.join(__dirname, '..', '..', '..');
+const scenarioDir = path.join(
+  repoRoot,
+  'seeds',
+  'scenarios',
+  scenarioSlug,
+  scenarioRevision,
+);
   const dataDir = path.join(scenarioDir, 'data');
 
   ensureDir(dataDir);
@@ -132,8 +135,8 @@ async function saveScenarioRevision({ scenarioSlug, scenarioRevision }) {
     'id',
   );
   const location = await exportTableForScenario(
-    scenarioRow.id, 
-    'location', 
+    scenarioRow.id,
+    'location',
     'id',
   );
   const action = await exportTableForScenario(scenarioRow.id, 'action', 'id');

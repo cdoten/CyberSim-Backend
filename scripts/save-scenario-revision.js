@@ -33,9 +33,9 @@ function parseArgs(argv) {
   return out;
 }
 
-(async () => {
+async function main(argv = process.argv) {
   try {
-    const args = parseArgs(process.argv);
+    const args = parseArgs(argv);
     const scenarioTag = args.tag || process.env.SCENARIO_TAG;
     const { scenarioSlug, scenarioRevision } = parseScenarioTag(scenarioTag);
 
@@ -53,8 +53,14 @@ function parseArgs(argv) {
   } finally {
     await db.destroy();
   }
-})().catch((err) => {
-  // eslint-disable-next-line no-console
-  console.error(err);
-  process.exit(1);
-});
+}
+
+if (require.main === module) {
+  main().catch((err) => {
+    // eslint-disable-next-line no-console
+    console.error(err);
+    process.exit(1);
+  });
+}
+
+module.exports = { main };
