@@ -237,9 +237,9 @@ async function importScenarioFromAirtable(
     location.type = location.location_code;
   });
 
-// Upsert the scenario row so any configured slug works, not just the original
-// default scenario from the single-scenario era. If the slug already exists,
-// the merge is a no-op and we get the existing row back.
+  // Upsert the scenario row so any configured slug works, not just the original
+  // default scenario from the single-scenario era. If the slug already exists,
+  // the merge is a no-op and we get the existing row back.
   const [scenario] = await db('scenario')
     .insert({ slug: scenarioSlug, name: scenarioSlug })
     .onConflict('slug')
