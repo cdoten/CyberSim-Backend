@@ -2,7 +2,7 @@
 
 const Airtable = require('airtable');
 const yup = require('yup');
-const { dbSchemas, airtableSchemas } = require('./migration_schemas');
+const { dbSchemas, airtableSchemas } = require('./import_schemas');
 const db = require('../models/db');
 const logger = require('../logger');
 const { throwNecessaryValidationErrors } = require('./errors');
@@ -68,7 +68,7 @@ function addPartyLocation(locations) {
     : locations?.[0];
 }
 
-async function migrate(accessToken, baseId, scenarioSlug = 'cso') {
+async function import(accessToken, baseId, scenarioSlug = 'cso') {
   // connect to the airtable instance
   Airtable.configure({
     endpointUrl: 'https://api.airtable.com',
@@ -80,7 +80,7 @@ async function migrate(accessToken, baseId, scenarioSlug = 'cso') {
   // do a starting "fake" fetch to check if the personal access token and table id are correct
   await fetchTable(base, 'handbook_categories');
 
-  // define arrays for junctions tables that must be added at the end of the migration
+  // define arrays for junctions tables that must be added at the end of the import
   const injectionResponse = [];
   const actionRole = [];
 
@@ -104,7 +104,7 @@ async function migrate(accessToken, baseId, scenarioSlug = 'cso') {
 
   throwNecessaryValidationErrors(
     validatedAirtableTables,
-    'There were airtable schema errors during the migration! Please fix them inside your airtable.',
+    'There were Airtable schema errors during the import. Please fix them inside your Airtable.',
   );
 
   const [
@@ -215,16 +215,9 @@ async function migrate(accessToken, baseId, scenarioSlug = 'cso') {
     location.type = location.location_code;
   });
 
-  // Reset the db and re-apply migrations. This wipes all data (games included)
-  // and is acceptable for single-scenario local/production use. When full
-  // multi-scenario import support is needed this will become a targeted
-  // per-scenario delete instead.
-  await db.migrate.rollback({}, true);
-  await db.migrate.latest();
-
   // Upsert the scenario row so any slug works — not just 'cso' which is the
-  // only slug migration 1 seeds. If the slug already exists (e.g. 'cso' from
-  // the migration) the merge is a no-op and we just get the existing row back.
+  // only slug import 1 seeds. If the slug already exists (e.g. 'cso' from
+  // the import) the merge is a no-op and we just get the existing row back.
   const [scenario] = await db('scenario')
     .insert({ slug: scenarioSlug, name: scenarioSlug })
     .onConflict('slug')
@@ -254,7 +247,7 @@ async function migrate(accessToken, baseId, scenarioSlug = 'cso') {
 
   throwNecessaryValidationErrors(
     validatedSqlTables,
-    'There were SQL schema errors during the migration! Please contact a developer about them.',
+    'Critical failure. There were SQL schema errors during the import.',
   );
 
   const [
@@ -293,8 +286,8 @@ async function migrate(accessToken, baseId, scenarioSlug = 'cso') {
       responseCount: sqlResponses.length,
       injectionCount: sqlInjections.length,
     },
-    'Migration inserted row counts',
+    'Import inserted row counts',
   );
 }
 
-module.exports = migrate;
+module.exports = import;

@@ -8,6 +8,7 @@
   "engines": {
     "node": "22.x"
   },
+{
   "scripts": {
     "prepare": "husky || true",
     "dev": "LOG_LEVEL=info nodemon --watch .env -r dotenv/config index.js",
@@ -19,14 +20,15 @@
     "test": "cross-env DOTENV_CONFIG_PATH=.env.test node -r dotenv/config ./node_modules/.bin/jest --runInBand",
     "migrate": "knex migrate:latest",
     "rollback": "knex migrate:rollback",
-    "reset:migrations": "knex migrate:rollback --all && knex migrate:latest",
+    "rebuild-db:schema": "knex migrate:rollback --all && knex migrate:latest",
     "seed:fixtures": "knex seed:run --specific 01_fixture_seed.js",
-    "seed:dataset": "knex seed:run --specific 02_dataset_seed.js",
-    "reset-db:fixtures": "npm run reset:migrations && npm run seed:fixtures",
-    "reset-db:dataset": "npm run reset:migrations && npm run seed:dataset",
-    "dataset:export": "node -r dotenv/config scripts/exportScenarioFromAirtable.js",
+    "seed:scenario": "knex seed:run --specific 02_scenario_seed.js",
+    "save:scenario": "node -r dotenv/config scripts/save-scenario-revision.js"
+    "reset-db:fixtures": "npm run rebuild-db:schema && npm run seed:fixtures",
+    "reset-db:scenario": "npm run rebuild-db:schema && npm run seed:scenario",
     "build-deploy": "zip -r deploy.zip . -x \"node_modules/*\" -x \"*.env*\" -x \".git/*\" -x \"*.zip\" -x \".vscode/*\""
-  },
+  }
+}
   "dependencies": {
     "@types/jest": "^26.0.8",
     "airtable": "^0.11.2",
