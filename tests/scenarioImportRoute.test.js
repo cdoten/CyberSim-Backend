@@ -44,9 +44,10 @@ describe('POST /scenarios/:scenarioSlug/import', () => {
   });
 
   it('returns 200 on successful scenario import', async () => {
-    const response = await request(app)
-      .post('/scenarios/cso/import')
-      .send({ password: 'test-import-password' });
+    const response = await request(app).post('/admin/scenarios/import').send({
+      scenarioSlug: 'cso',
+      password: 'test-import-password',
+    });
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
@@ -63,8 +64,9 @@ describe('POST /scenarios/:scenarioSlug/import', () => {
   });
 
   it('returns 400 when password is missing', async () => {
-    const response = await request(app).post('/scenarios/cso/import').send({});
-
+    const response = await request(app).post('/admin/scenarios/import').send({
+      scenarioSlug: 'cso',
+    });
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
       message: 'Scenario import password is required.',
@@ -75,9 +77,10 @@ describe('POST /scenarios/:scenarioSlug/import', () => {
   });
 
   it('returns 400 when password is invalid', async () => {
-    const response = await request(app)
-      .post('/scenarios/cso/import')
-      .send({ password: 'wrong-password' });
+    const response = await request(app).post('/admin/scenarios/import').send({
+      scenarioSlug: 'cso',
+      password: 'wrong-password',
+    });
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
@@ -89,9 +92,10 @@ describe('POST /scenarios/:scenarioSlug/import', () => {
   });
 
   it('returns 400 when scenario slug has invalid characters', async () => {
-    const response = await request(app)
-      .post('/scenarios/CSO/import')
-      .send({ password: 'test-import-password' });
+    const response = await request(app).post('/admin/scenarios/import').send({
+      scenarioSlug: 'cso',
+      password: 'test-import-password',
+    });
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
@@ -131,8 +135,11 @@ describe('POST /scenarios/:scenarioSlug/import', () => {
     const disabledApp = require('../src/app');
 
     const response = await request(disabledApp)
-      .post('/scenarios/cso/import')
-      .send({ password: 'anything' });
+      .post('/admin/scenarios/import')
+      .send({
+        scenarioSlug: 'cso',
+        password: 'anything',
+      });
 
     expect(response.status).toBe(500);
     expect(response.body).toEqual({
@@ -143,9 +150,10 @@ describe('POST /scenarios/:scenarioSlug/import', () => {
   it('returns 500 when AIRTABLE_ACCESS_TOKEN is missing', async () => {
     delete process.env.AIRTABLE_ACCESS_TOKEN;
 
-    const response = await request(app)
-      .post('/scenarios/cso/import')
-      .send({ password: 'test-import-password' });
+    const response = await request(app).post('/admin/scenarios/import').send({
+      scenarioSlug: 'cso',
+      password: 'test-import-password',
+    });
 
     expect(response.status).toBe(500);
     expect(response.body).toEqual({
@@ -162,9 +170,10 @@ describe('POST /scenarios/:scenarioSlug/import', () => {
       throw new Error('No Airtable base ID configured for scenario "blurgle"');
     });
 
-    const response = await request(app)
-      .post('/scenarios/blurgle/import')
-      .send({ password: 'test-import-password' });
+    const response = await request(app).post('/admin/scenarios/import').send({
+      scenarioSlug: 'blurgle',
+      password: 'test-import-password',
+    });
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
@@ -179,9 +188,10 @@ describe('POST /scenarios/:scenarioSlug/import', () => {
       error: 'AUTHENTICATION_REQUIRED',
     });
 
-    const response = await request(app)
-      .post('/scenarios/cso/import')
-      .send({ password: 'test-import-password' });
+    const response = await request(app).post('/admin/scenarios/import').send({
+      scenarioSlug: 'cso',
+      password: 'test-import-password',
+    });
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
@@ -194,9 +204,10 @@ describe('POST /scenarios/:scenarioSlug/import', () => {
       error: 'NOT_FOUND',
     });
 
-    const response = await request(app)
-      .post('/scenarios/cso/import')
-      .send({ password: 'test-import-password' });
+    const response = await request(app).post('/admin/scenarios/import').send({
+      scenarioSlug: 'cso',
+      password: 'test-import-password',
+    });
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
@@ -209,9 +220,10 @@ describe('POST /scenarios/:scenarioSlug/import', () => {
       error: 'NOT_AUTHORIZED',
     });
 
-    const response = await request(app)
-      .post('/scenarios/cso/import')
-      .send({ password: 'test-import-password' });
+    const response = await request(app).post('/admin/scenarios/import').send({
+      scenarioSlug: 'cso',
+      password: 'test-import-password',
+    });
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
@@ -232,9 +244,10 @@ describe('POST /scenarios/:scenarioSlug/import', () => {
       code: 'ACTIVE_GAMES_EXIST',
     });
 
-    const response = await request(app)
-      .post('/scenarios/cso/import')
-      .send({ password: 'test-import-password' });
+    const response = await request(app).post('/admin/scenarios/import').send({
+      scenarioSlug: 'cso',
+      password: 'test-import-password',
+    });
 
     expect(response.status).toBe(409);
     expect(response.body).toEqual({
@@ -251,9 +264,10 @@ describe('POST /scenarios/:scenarioSlug/import', () => {
       tableName: 'events',
     });
 
-    const response = await request(app)
-      .post('/scenarios/cso/import')
-      .send({ password: 'test-import-password' });
+    const response = await request(app).post('/admin/scenarios/import').send({
+      scenarioSlug: 'cso',
+      password: 'test-import-password',
+    });
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
@@ -268,14 +282,29 @@ describe('POST /scenarios/:scenarioSlug/import', () => {
     });
   });
 
+  it('returns 400 when scenario slug is missing', async () => {
+    const response = await request(app).post('/admin/scenarios/import').send({
+      password: 'test-import-password',
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      message: 'Scenario slug is required.',
+    });
+
+    expect(getAirtableBaseId).not.toHaveBeenCalled();
+    expect(importScenarioFromAirtable).not.toHaveBeenCalled();
+  });
+
   it('returns 500 for unexpected import errors', async () => {
     importScenarioFromAirtable.mockRejectedValue(
       new Error('Something unexpected happened'),
     );
 
-    const response = await request(app)
-      .post('/scenarios/cso/import')
-      .send({ password: 'test-import-password' });
+    const response = await request(app).post('/admin/scenarios/import').send({
+      scenarioSlug: 'cso',
+      password: 'test-import-password',
+    });
 
     expect(response.status).toBe(500);
     expect(response.body).toEqual({

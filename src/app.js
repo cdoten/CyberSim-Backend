@@ -190,17 +190,17 @@ app.get('/curveballs', async (req, res) => {
   res.json(records);
 });
 
-app.post('/scenarios/:scenarioSlug/import', async (req, res) => {
-  const scenarioSlug = req.params.scenarioSlug?.trim();
-  const { password } = req.body || {};
+app.post('/admin/scenarios/import', async (req, res) => {
+  const { scenarioSlug, password } = req.body || {};
+  const normalizedScenarioSlug = scenarioSlug?.trim();
 
-  if (!scenarioSlug) {
+  if (!normalizedScenarioSlug) {
     return res.status(400).send({
       message: 'Scenario slug is required.',
     });
   }
 
-  if (!SCENARIO_SLUG_REGEX.test(scenarioSlug)) {
+  if (!SCENARIO_SLUG_REGEX.test(normalizedScenarioSlug)) {
     return res.status(400).send({
       message:
         'Scenario slug must contain only lowercase letters, numbers, and hyphens.',
@@ -219,9 +219,9 @@ app.post('/scenarios/:scenarioSlug/import', async (req, res) => {
   }
 
   if (password !== configuredPassword) {
-    return res
-      .status(400)
-      .json({ password: 'Invalid scenario import password' });
+    return res.status(400).json({
+      password: 'Invalid scenario import password',
+    });
   }
 
   const accessToken = process.env.AIRTABLE_ACCESS_TOKEN;
@@ -234,7 +234,7 @@ app.post('/scenarios/:scenarioSlug/import', async (req, res) => {
 
   let baseId;
   try {
-    baseId = getAirtableBaseId(scenarioSlug);
+    baseId = getAirtableBaseId(normalizedScenarioSlug);
   } catch (err) {
     return res.status(400).send({ message: err.message });
   }
@@ -243,12 +243,12 @@ app.post('/scenarios/:scenarioSlug/import', async (req, res) => {
     await importScenarioFromAirtable({
       accessToken,
       baseId,
-      scenarioSlug,
+      scenarioSlug: normalizedScenarioSlug,
     });
 
     return res.status(200).send({
       ok: true,
-      message: `Scenario "${scenarioSlug}" imported successfully.`,
+      message: `Scenario "${normalizedScenarioSlug}" imported successfully.`,
     });
   } catch (err) {
     if (err.error === 'AUTHENTICATION_REQUIRED') {
@@ -259,7 +259,7 @@ app.post('/scenarios/:scenarioSlug/import', async (req, res) => {
 
     if (err.error === 'NOT_FOUND') {
       return res.status(400).send({
-        message: `Invalid Airtable base id for scenario "${scenarioSlug}".`,
+        message: `Invalid Airtable base id for scenario "${normalizedScenarioSlug}".`,
       });
     }
 
@@ -279,7 +279,7 @@ app.post('/scenarios/:scenarioSlug/import', async (req, res) => {
 
     if (err.code === 'ACTIVE_GAMES_EXIST') {
       return res.status(409).send({
-        message: `Cannot import scenario "${scenarioSlug}" while active games exist.`,
+        message: `Cannot import scenario "${normalizedScenarioSlug}" while active games exist.`,
       });
     }
 
@@ -293,7 +293,11 @@ app.post('/scenarios/:scenarioSlug/import', async (req, res) => {
     }
 
     logger.error(
-      { scenarioSlug, message: err.message, stack: err.stack },
+      {
+        scenarioSlug: normalizedScenarioSlug,
+        message: err.message,
+        stack: err.stack,
+      },
       'Scenario import failed',
     );
 
