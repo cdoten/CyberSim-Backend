@@ -25,7 +25,7 @@ const app = require('../src/app');
 const importScenarioFromAirtable = require('../src/util/importScenarioFromAirtable');
 const { getAirtableBaseId } = require('../src/util/airtable');
 
-describe('POST /scenarios/:scenarioSlug/import', () => {
+describe('POST /admin/scenarios/import', () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
@@ -91,9 +91,23 @@ describe('POST /scenarios/:scenarioSlug/import', () => {
     expect(importScenarioFromAirtable).not.toHaveBeenCalled();
   });
 
+  it('returns 400 when scenario slug is missing', async () => {
+    const response = await request(app).post('/admin/scenarios/import').send({
+      password: 'test-import-password',
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      message: 'Scenario slug is required.',
+    });
+
+    expect(getAirtableBaseId).not.toHaveBeenCalled();
+    expect(importScenarioFromAirtable).not.toHaveBeenCalled();
+  });
+
   it('returns 400 when scenario slug has invalid characters', async () => {
     const response = await request(app).post('/admin/scenarios/import').send({
-      scenarioSlug: 'cso',
+      scenarioSlug: 'CSO',
       password: 'test-import-password',
     });
 
