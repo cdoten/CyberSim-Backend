@@ -97,7 +97,8 @@ async function saveScenarioRevision({
   scenarioSlug,
   scenarioRevision,
   rootDir,
-}) {  const scenarioRow = await db('scenario')
+}) {
+  const scenarioRow = await db('scenario')
     .where({ slug: scenarioSlug })
     .first();
 
@@ -105,14 +106,14 @@ async function saveScenarioRevision({
     throw new Error(`Scenario not found: "${scenarioSlug}"`);
   }
 
-const repoRoot = rootDir || path.join(__dirname, '..', '..', '..');
-const scenarioDir = path.join(
-  repoRoot,
-  'seeds',
-  'scenarios',
-  scenarioSlug,
-  scenarioRevision,
-);
+  const repoRoot = rootDir || path.join(__dirname, '..', '..', '..');
+  const scenarioDir = path.join(
+    repoRoot,
+    'seeds',
+    'scenarios',
+    scenarioSlug,
+    scenarioRevision,
+  );
   const dataDir = path.join(scenarioDir, 'data');
 
   ensureDir(dataDir);

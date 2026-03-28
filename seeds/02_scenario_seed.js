@@ -117,7 +117,8 @@ exports.seed = async (knex) => {
 
   // This file lives in `seeds/`, so scenario revisions are in
   // `seeds/scenarios/...`
-  const scenariosRoot = process.env.SCENARIO_SEED_ROOT || path.join(__dirname, 'scenarios');
+  const scenariosRoot =
+    process.env.SCENARIO_SEED_ROOT || path.join(__dirname, 'scenarios');
   const scenarioDir = path.join(scenariosRoot, scenario, revision);
   const manifestPath = path.join(scenarioDir, 'manifest.json');
 

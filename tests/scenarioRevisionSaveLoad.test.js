@@ -38,7 +38,9 @@ describe('saveScenarioRevision service', () => {
         const api = {
           where(criteria) {
             selected = selected.filter((row) =>
-              Object.entries(criteria).every(([key, value]) => row[key] === value),
+              Object.entries(criteria).every(
+                ([key, value]) => row[key] === value,
+              ),
             );
             return api;
           },
@@ -82,7 +84,7 @@ describe('saveScenarioRevision service', () => {
 
       const mockedDb = (tableName) => makeQuery(tableName, dataStore);
 
-      mockedDb.__setData = (tableName, rows) => {
+      mockedDb.setData = (tableName, rows) => {
         dataStore[tableName] = rows;
       };
 
@@ -101,43 +103,45 @@ describe('saveScenarioRevision service', () => {
       execSync: jest.fn(() => Buffer.from('abcdef1234567890')),
     }));
 
+    // eslint-disable-next-line global-require
     db = require('../src/models/db');
-    ({
-      saveScenarioRevision,
-      parseScenarioTag,
-    } = require('../src/services/scenario/saveScenarioRevision'));
 
-    db.__setData('scenario', [
+    // eslint-disable-next-line global-require
+    const scenarioSaveService = require('../src/services/scenario/saveScenarioRevision');
+
+    ({ saveScenarioRevision, parseScenarioTag } = scenarioSaveService);
+
+    db.setData('scenario', [
       { id: 1, slug: 'cso', name: 'CSO Scenario' },
       { id: 2, slug: 'parl', name: 'Parliament Scenario' },
     ]);
 
-    db.__setData('system', [
+    db.setData('system', [
       { id: 'sys1', name: 'Email', type: 'hq', scenario_id: 1 },
       { id: 'sys2', name: 'CRM', type: 'local', scenario_id: 2 },
     ]);
 
-    db.__setData('location', [
+    db.setData('location', [
       { id: 'loc1', name: 'HQ', type: 'hq', scenario_id: 1 },
       { id: 'loc2', name: 'Field', type: 'local', scenario_id: 2 },
     ]);
 
-    db.__setData('role', [
+    db.setData('role', [
       { id: 'role1', name: 'Comms', scenario_id: 1 },
       { id: 'role2', name: 'Ops', scenario_id: 2 },
     ]);
 
-    db.__setData('mitigation', [
+    db.setData('mitigation', [
       { id: 'mit1', description: 'MFA', scenario_id: 1 },
       { id: 'mit2', description: 'Backups', scenario_id: 2 },
     ]);
 
-    db.__setData('response', [
+    db.setData('response', [
       { id: 'resp1', description: 'Reset password', scenario_id: 1 },
       { id: 'resp2', description: 'Notify users', scenario_id: 2 },
     ]);
 
-    db.__setData('injection', [
+    db.setData('injection', [
       {
         id: 'inj1',
         title: 'Phish',
@@ -154,7 +158,7 @@ describe('saveScenarioRevision service', () => {
       },
     ]);
 
-    db.__setData('action', [
+    db.setData('action', [
       {
         id: 'act1',
         description: 'Press release',
@@ -169,33 +173,32 @@ describe('saveScenarioRevision service', () => {
       },
     ]);
 
-    db.__setData('curveball', [
+    db.setData('curveball', [
       { id: 'cb1', description: 'Power outage', scenario_id: 1 },
       { id: 'cb2', description: 'Printer jam', scenario_id: 2 },
     ]);
 
-    db.__setData('dictionary', [
+    db.setData('dictionary', [
       { id: 'dict1', word: 'poll', synonym: 'support', scenario_id: 1 },
       { id: 'dict2', word: 'budget', synonym: 'funds', scenario_id: 2 },
     ]);
 
-    db.__setData('action_role', [
+    db.setData('action_role', [
       { id: 1, action_id: 'act1', role_id: 'role1', scenario_id: 1 },
       { id: 2, action_id: 'act2', role_id: 'role2', scenario_id: 2 },
     ]);
 
-    db.__setData('injection_response', [
+    db.setData('injection_response', [
       { id: 1, injection_id: 'inj1', response_id: 'resp1', scenario_id: 1 },
       { id: 2, injection_id: 'inj2', response_id: 'resp2', scenario_id: 2 },
     ]);
 
-    db.__setData('knex_migrations', [
+    db.setData('knex_migrations', [
       {
         id: 1,
         name: '20260313000400_enforce_scenario_id_constraints.js',
       },
     ]);
-
   });
 
   afterEach(() => {
@@ -286,7 +289,9 @@ describe('save-scenario-revision wrapper', () => {
       }),
     }));
 
+    // eslint-disable-next-line global-require
     db = require('../src/models/db');
+    // eslint-disable-next-line global-require
     service = require('../src/services/scenario/saveScenarioRevision');
 
     process.env = { ...originalEnv };
@@ -310,6 +315,7 @@ describe('save-scenario-revision wrapper', () => {
       'argvscenario@2026-03-28.2',
     ];
 
+    // eslint-disable-next-line global-require
     const { main } = require('../scripts/save-scenario-revision');
     await main(process.argv);
 
@@ -330,12 +336,13 @@ describe('02_scenario_seed', () => {
 
   beforeEach(() => {
     jest.resetModules();
+
+    // eslint-disable-next-line global-require
     seedModule = require('../seeds/02_scenario_seed');
     tempRoot = fs.mkdtempSync(
       path.join(os.tmpdir(), 'cybersim-seed-scenario-test-'),
     );
     process.env.SCENARIO_SEED_ROOT = path.join(tempRoot, 'scenarios');
-
   });
 
   afterEach(() => {
@@ -371,8 +378,7 @@ describe('02_scenario_seed', () => {
         revision: '2026-03-28.1',
         name: 'CSO Scenario',
         db: {
-          latest_migration:
-            '20260313000400_enforce_scenario_id_constraints.js',
+          latest_migration: '20260313000400_enforce_scenario_id_constraints.js',
         },
       }),
     );
@@ -388,7 +394,10 @@ describe('02_scenario_seed', () => {
     fs.writeFileSync(path.join(dataDir, 'injection.json'), JSON.stringify([]));
     fs.writeFileSync(path.join(dataDir, 'action.json'), JSON.stringify([]));
     fs.writeFileSync(path.join(dataDir, 'curveball.json'), JSON.stringify([]));
-    fs.writeFileSync(path.join(dataDir, 'action_role.json'), JSON.stringify([]));
+    fs.writeFileSync(
+      path.join(dataDir, 'action_role.json'),
+      JSON.stringify([]),
+    );
     fs.writeFileSync(
       path.join(dataDir, 'injection_response.json'),
       JSON.stringify([]),
