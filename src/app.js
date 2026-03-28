@@ -3,6 +3,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const expressPino = require('express-pino-logger');
+
 const SCENARIO_SLUG_REGEX = /^[a-z0-9-]+$/;
 
 const crypto = require('crypto');
