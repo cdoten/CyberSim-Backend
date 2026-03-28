@@ -1,3 +1,20 @@
+/**
+ * CLI wrapper for saving the current database-backed scenario content as a
+ * versioned scenario revision on disk.
+ *
+ * What it does:
+ * - Accepts a scenario revision tag in the form "scenario@revision"
+ * - Calls the scenario save service to export the selected scenario's static
+ *   content into `seeds/scenarios/<scenario>/<revision>/`
+ * - Prints the output location on success
+ *
+ * Important notes:
+ * - This is a thin command-line entrypoint only. The real save logic lives in
+ *   `src/services/scenario/saveScenarioRevision.js`.
+ * - `--tag` takes precedence over `SCENARIO_TAG` if both are provided.
+ * - The script always destroys the shared Knex connection before exit.
+ */
+
 const db = require('../src/models/db');
 const {
   saveScenarioRevision,
@@ -19,21 +36,25 @@ function parseArgs(argv) {
 (async () => {
   try {
     const args = parseArgs(process.argv);
-    const { scenarioSlug, scenarioRevision } = parseScenarioTag(args.tag);
+    const scenarioTag = args.tag || process.env.SCENARIO_TAG;
+    const { scenarioSlug, scenarioRevision } = parseScenarioTag(scenarioTag);
 
     const result = await saveScenarioRevision({
       scenarioSlug,
       scenarioRevision,
     });
 
+    // eslint-disable-next-line no-console
     console.log(
       `Saved scenario revision: ${result.scenarioSlug}@${result.scenarioRevision}`,
     );
+    // eslint-disable-next-line no-console
     console.log(`Wrote: ${result.outputDir}`);
   } finally {
     await db.destroy();
   }
 })().catch((err) => {
+  // eslint-disable-next-line no-console
   console.error(err);
   process.exit(1);
 });

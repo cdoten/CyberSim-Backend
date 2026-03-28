@@ -174,21 +174,21 @@ To verify a particular scenario's base independently of the health endpoint:
 
 Replace `<BASE_ID>` with the `app...` value for the scenario you want to test (from `AIRTABLE_BASE_IDS`). A 200 response with a `tables` array confirms that base is accessible.
 
-## Dataset Snapshots
+## Scenario Snapshots
 
-After a successful Airtable import, you can export a versioned snapshot of the database into the repository so it can be restored later without Airtable access:
+After a successful Airtable import, you can export a versioned revision of the database into the repository so it can be restored later without Airtable access:
 
-    SCENARIO_TAG=cso@2026-03-03.1 npm run dataset:export
+    SCENARIO_TAG=cso@2026-03-03.1 npm run save:scenario
 
 The tag format is `<scenario>@<revision>`. Snapshots are stored under:
 
     seeds/datasets/<scenario>/<revision>/
 
-To restore a snapshot:
+To restore a scenario revision:
 
-    SCENARIO_TAG=cso@2026-03-03.1 npm run reset-db:dataset
+    SCENARIO_TAG=cso@2026-03-03.1 npm run reset-db:scenario
 
-Snapshots allow scenarios to be versioned, shared, and reproduced without a live Airtable connection.
+This allow scenarios to be versioned, shared, and reproduced without a live Airtable connection.
 
 ## Adding a New Scenario
 

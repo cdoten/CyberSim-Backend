@@ -176,7 +176,7 @@ exports.seed = async (knex) => {
   const action = loadScenarioJson(scenarioDir, 'action.json') || [];
   const curveball = loadScenarioJson(scenarioDir, 'curveball.json') || [];
   const dictionary = loadScenarioJson(scenarioDir, 'dictionary.json'); // optional
-
+  const location = loadScenarioJson(scenarioDir, 'location.json') || [];
   const actionRole = loadScenarioJson(scenarioDir, 'action_role.json') || [];
   const injectionResponse =
     loadScenarioJson(scenarioDir, 'injection_response.json') || [];
@@ -215,6 +215,7 @@ exports.seed = async (knex) => {
 
     // Insert parents first
     if (system.length) await trx('system').insert(tag(system));
+    if (location.length) await trx('location').insert(tag(location));
     if (role.length) await trx('role').insert(tag(role));
     if (mitigation.length) await trx('mitigation').insert(tag(mitigation));
     if (response.length) await trx('response').insert(tag(response));

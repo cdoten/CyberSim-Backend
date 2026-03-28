@@ -1,3 +1,21 @@
+/**
+ * 
+ * Save the current static content for one scenario from the database into a
+ * versioned scenario revision on disk.
+ *
+ * What it does:
+ * - Reads one scenario's static tables from PostgreSQL, filtered by scenario_id
+ * - Normalizes exported rows for portability
+ * - Writes revision JSON files and a manifest under
+ *   `seeds/scenarios/<scenario>/<revision>/`
+ *
+ * Important notes:
+ * - This file contains reusable service logic only; it is not a CLI entrypoint.
+ * - Exported rows intentionally omit `scenario_id` because the destructive
+ *   scenario seed recreates it on load.
+ * - This service exports only static scenario content, not runtime game state.
+ */
+
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
@@ -113,6 +131,11 @@ async function saveScenarioRevision({ scenarioSlug, scenarioRevision }) {
     'injection',
     'id',
   );
+  const location = await exportTableForScenario(
+    scenarioRow.id, 
+    'location', 
+    'id',
+  );
   const action = await exportTableForScenario(scenarioRow.id, 'action', 'id');
   const curveball = await exportTableForScenario(
     scenarioRow.id,
@@ -149,6 +172,7 @@ async function saveScenarioRevision({ scenarioSlug, scenarioRevision }) {
   writeJson(path.join(dataDir, 'action.json'), action);
   writeJson(path.join(dataDir, 'curveball.json'), curveball);
   writeJson(path.join(dataDir, 'action_role.json'), actionRole);
+  writeJson(path.join(dataDir, 'location.json'), location);
   writeJson(path.join(dataDir, 'injection_response.json'), injectionResponse);
 
   if (dictionary) {
@@ -186,6 +210,7 @@ async function saveScenarioRevision({ scenarioSlug, scenarioRevision }) {
       curveball: curveball.length,
       action_role: actionRole.length,
       injection_response: injectionResponse.length,
+      location: location.length,
       ...(dictionary ? { dictionary: dictionary.length } : {}),
     },
   };

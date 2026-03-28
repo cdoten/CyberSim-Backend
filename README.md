@@ -141,7 +141,7 @@ seeds/datasets/cso/2026-03-03.1/
 Load a dataset snapshot:
 
 ```bash
-SCENARIO_TAG=cso@2026-03-03.1 npm run reset-db:dataset
+SCENARIO_TAG=cso@2026-03-03.1 npm run reset-db:scenario
 ```
 
 This will:
@@ -150,15 +150,15 @@ This will:
 2. Apply migrations
 3. Load the selected dataset snapshot
 
-### Export Dataset Snapshot from Database
+### Export Scenario Revision from Database
 
 After importing from Airtable, export a versioned snapshot of the current database content into the repository so it can be reloaded later without Airtable access:
 
 ```bash
-SCENARIO_TAG=cso@2026-03-03.1 npm run dataset:export
+SCENARIO_TAG=cso@2026-03-03.1 npm run save:scenario
 ```
 
-The tag format is `<scenario>@<revision>`. This writes a snapshot to:
+The tag format is `<scenario>@<revision>`. This writes a scenario revision to:
 
 ```
 seeds/datasets/<scenario>/<revision>/
