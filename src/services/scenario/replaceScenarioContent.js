@@ -1,3 +1,19 @@
+/**
+ * Replace all static content for a single scenario inside an existing database
+ * transaction.
+ *
+ * What it does:
+ * - Deletes existing static rows for one scenario in foreign-key-safe order
+ * - Reinserts the supplied validated rows for that scenario
+ * - Handles injection.followup_injection in a two-pass insert/update flow
+ *
+ * Important notes:
+ * - This function only replaces static scenario content. It does not touch
+ *   runtime game tables.
+ * - Callers are responsible for validating rows and blocking imports when
+ *   active games exist.
+ * - This function must be called inside an open transaction.
+ */
 async function replaceScenarioContent({
   trx,
   scenarioId,

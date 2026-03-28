@@ -1,3 +1,19 @@
+/**
+ * Import one scenario's authored content from Airtable into the database.
+ *
+ * What it does:
+ * - Reads and validates Airtable source tables
+ * - Transforms Airtable records into DB-shaped scenario content
+ * - Upserts the scenario row and tags all static rows with scenario_id
+ * - Blocks import when active games exist for that scenario
+ * - Replaces only that scenario's static content inside a transaction
+ *
+ * Important notes:
+ * - This file imports scenario content only. It does not run schema migrations.
+ * - Runtime game state is intentionally preserved and is not recreated here.
+ * - Static content replacement is delegated to replaceScenarioContent().
+ */
+
 /* eslint no-param-reassign: "off", camelcase: "off", no-restricted-syntax: "off", guard-for-in: "off", no-await-in-loop: "off" */
 
 const Airtable = require('airtable');
@@ -6,6 +22,8 @@ const { dbSchemas, airtableSchemas } = require('./import_schemas');
 const db = require('../models/db');
 const logger = require('../logger');
 const { throwNecessaryValidationErrors } = require('./errors');
+const assertNoActiveGames = require('../services/scenario/assertNoActiveGames');
+const replaceScenarioContent = require('../services/scenario/replaceScenarioContent');
 
 const typeMap = {
   Table: 'Table',
@@ -219,22 +237,20 @@ async function importScenarioFromAirtable(
     location.type = location.location_code;
   });
 
-  // Upsert the scenario row so any slug works — not just 'cso' which is the
-  // only slug import 1 seeds. If the slug already exists (e.g. 'cso' from
-  // the import) the merge is a no-op and we just get the existing row back.
+// Upsert the scenario row so any configured slug works, not just the original
+// default scenario from the single-scenario era. If the slug already exists,
+// the merge is a no-op and we get the existing row back.
   const [scenario] = await db('scenario')
     .insert({ slug: scenarioSlug, name: scenarioSlug })
     .onConflict('slug')
     .merge()
     .returning('*');
+
   const scenarioId = scenario.id;
 
-  // Tag every row with scenario_id before DB validation and insert.
   const tag = (rows) =>
     rows.map((row) => ({ ...row, scenario_id: scenarioId }));
 
-  // add all the data to the db
-  // sequential processing is important here as some tables rely on data from other tables to be already there
   const validatedSqlTables = await Promise.allSettled([
     validateForDb('location', tag(locations)),
     validateForDb('dictionary', tag(dictionary)),
@@ -268,18 +284,24 @@ async function importScenarioFromAirtable(
     sqlActionRole,
   ] = validatedSqlTables.map((table) => table.value);
 
+  await assertNoActiveGames({ scenarioId, scenarioSlug });
+
   await db.transaction(async (trx) => {
-    await trx('location').insert(sqlLocations);
-    await trx('dictionary').insert(sqlDictionary);
-    await trx('injection').insert(sqlInjections);
-    await trx('mitigation').insert(sqlMitigations);
-    await trx('response').insert(sqlResponses);
-    await trx('system').insert(sqlSystems);
-    await trx('role').insert(sqlRoles);
-    await trx('action').insert(sqlActions);
-    await trx('curveball').insert(sqlCurveballs);
-    await trx('injection_response').insert(sqlInjectionResponse);
-    await trx('action_role').insert(sqlActionRole);
+    await replaceScenarioContent({
+      trx,
+      scenarioId,
+      locations: sqlLocations,
+      dictionary: sqlDictionary,
+      injections: sqlInjections,
+      mitigations: sqlMitigations,
+      responses: sqlResponses,
+      systems: sqlSystems,
+      roles: sqlRoles,
+      actions: sqlActions,
+      curveballs: sqlCurveballs,
+      injectionResponse: sqlInjectionResponse,
+      actionRole: sqlActionRole,
+    });
   });
 
   // Write out information about the updates
