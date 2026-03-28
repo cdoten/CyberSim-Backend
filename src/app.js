@@ -3,6 +3,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const expressPino = require('express-pino-logger');
+const SCENARIO_SLUG_REGEX = /^[a-z0-9-]+$/;
 
 const crypto = require('crypto');
 const logger = require('./logger');
@@ -188,21 +189,41 @@ app.get('/curveballs', async (req, res) => {
   res.json(records);
 });
 
-app.post('/scenario/import', async (req, res) => {
-  const { password, scenarioSlug = 'cso' } = req.body;
+app.post('/scenarios/:scenarioSlug/import', async (req, res) => {
+  const scenarioSlug = req.params.scenarioSlug?.trim();
+  const { password } = req.body || {};
 
-  // Ensure there is in fact some password set.
+  if (!scenarioSlug) {
+    return res.status(400).send({
+      message: 'Scenario slug is required.',
+    });
+  }
+
+  if (!SCENARIO_SLUG_REGEX.test(scenarioSlug)) {
+    return res.status(400).send({
+      message:
+        'Scenario slug must contain only lowercase letters, numbers, and hyphens.',
+    });
+  }
+
+  if (typeof password !== 'string' || !password) {
+    return res.status(400).send({
+      message: 'Scenario import password is required.',
+    });
+  }
+
   const configuredPassword = config.migrationPassword;
-  if (!config.migrationPassword) {
-    return res.status(500).send({ message: 'Migration disabled.' });
+  if (!configuredPassword) {
+    return res.status(500).send({ message: 'Scenario import disabled.' });
   }
 
   if (password !== configuredPassword) {
-    return res.status(400).json({ password: 'Invalid migration password' });
+    return res
+      .status(400)
+      .json({ password: 'Invalid scenario import password' });
   }
 
   const accessToken = process.env.AIRTABLE_ACCESS_TOKEN;
-
   if (!accessToken) {
     return res.status(500).send({
       message:
@@ -214,12 +235,20 @@ app.post('/scenario/import', async (req, res) => {
   try {
     baseId = getAirtableBaseId(scenarioSlug);
   } catch (err) {
-    return res.status(500).send({ message: err.message });
+    return res.status(400).send({ message: err.message });
   }
 
   try {
-    await importScenarioFromAirtable(accessToken, baseId, scenarioSlug);
-    return res.send();
+    await importScenarioFromAirtable({
+      accessToken,
+      baseId,
+      scenarioSlug,
+    });
+
+    return res.status(200).send({
+      ok: true,
+      message: `Scenario "${scenarioSlug}" imported successfully.`,
+    });
   } catch (err) {
     if (err.error === 'AUTHENTICATION_REQUIRED') {
       return res.status(400).send({
@@ -229,7 +258,7 @@ app.post('/scenario/import', async (req, res) => {
 
     if (err.error === 'NOT_FOUND') {
       return res.status(400).send({
-        message: 'Invalid Airtable base id (server configuration).',
+        message: `Invalid Airtable base id for scenario "${scenarioSlug}".`,
       });
     }
 
@@ -247,6 +276,12 @@ app.post('/scenario/import', async (req, res) => {
       });
     }
 
+    if (err.code === 'ACTIVE_GAMES_EXIST') {
+      return res.status(409).send({
+        message: `Cannot import scenario "${scenarioSlug}" while active games exist.`,
+      });
+    }
+
     if (err.validation) {
       const errors = transformValidationErrors(err);
       return res.status(400).send({
@@ -256,10 +291,14 @@ app.post('/scenario/import', async (req, res) => {
       });
     }
 
-    logger.error({ message: err.message, stack: err.stack }, 'Import failed');
+    logger.error(
+      { scenarioSlug, message: err.message, stack: err.stack },
+      'Scenario import failed',
+    );
+
     return res.status(500).send({
       message:
-        'There was an internal server error during the migration! Please contact the developers to fix it.',
+        'There was an internal server error during scenario import. Please contact the developers to fix it.',
     });
   }
 });
