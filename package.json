@@ -23,6 +23,7 @@
     "seed:fixtures": "knex seed:run --specific 01_fixture_seed.js",
     "seed:scenario": "knex seed:run --specific 02_scenario_seed.js",
     "save:scenario": "node -r dotenv/config scripts/save-scenario-revision.js",
+    "load:scenario": "node -r dotenv/config scripts/load-scenario-revision.js",
     "reset-db:fixtures": "npm run rebuild-db:schema && npm run seed:fixtures",
     "reset-db:scenario": "npm run rebuild-db:schema && npm run seed:scenario",
     "build-deploy": "zip -r deploy.zip . -x \"node_modules/*\" -x \"*.env*\" -x \".git/*\" -x \"*.zip\" -x \".vscode/*\" -x \".claude/*\""

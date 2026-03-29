@@ -62,9 +62,10 @@ describe('getScenarioBySlug', () => {
   });
 
   test('throws a descriptive error for an unknown slug', async () => {
-    await expect(getScenarioBySlug('does-not-exist')).rejects.toThrow(
-      'Scenario not found: "does-not-exist"',
-    );
+    const err = await getScenarioBySlug('does-not-exist').catch((e) => e);
+    expect(err.message).toBe('Scenario not found: "does-not-exist"');
+    expect(err.statusCode).toBe(404);
+    expect(err.code).toBe('SCENARIO_NOT_FOUND');
   });
 });
 

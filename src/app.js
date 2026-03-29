@@ -266,13 +266,15 @@ app.post('/admin/scenarios/import', async (req, res) => {
   const normalizedScenarioSlug = scenarioSlug?.trim();
 
   if (!normalizedScenarioSlug) {
-    return res.status(400).send({
+    return res.status(400).json({
+      error: 'SCENARIO_SLUG_REQUIRED',
       message: 'Scenario slug is required.',
     });
   }
 
   if (!SCENARIO_SLUG_REGEX.test(normalizedScenarioSlug)) {
-    return res.status(400).send({
+    return res.status(400).json({
+      error: 'INVALID_SCENARIO_SLUG',
       message:
         'Scenario slug must contain only lowercase letters, numbers, and hyphens.',
     });
