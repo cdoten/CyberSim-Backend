@@ -627,7 +627,7 @@ const performAction = async ({ gameId, actionId }) => {
     switch (error.message) {
       case 'Not enough budget':
         throw error;
-      case 'The required systems for this action are not available':
+      case 'The required systems for this action are not available.':
         throw error;
       default:
         throw new Error('Server error on performing action');

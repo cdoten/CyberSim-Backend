@@ -1,5 +1,6 @@
 const dummyGame = {
   id: 'TestGame',
+  scenario_id: 1,
   state: 'PREPARATION',
   poll: 55,
   budget: 6000,

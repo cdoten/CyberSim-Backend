@@ -6,7 +6,9 @@ const db = require('./db');
 const getScenarioBySlug = async (slug) => {
   const scenario = await db('scenario').where({ slug }).first();
   if (!scenario) {
-    throw new Error(`Scenario not found: "${slug}"`);
+    const err = new Error(`Scenario not found: "${slug}"`);
+    err.statusCode = 404;
+    throw err;
   }
   return scenario;
 };

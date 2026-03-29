@@ -8,9 +8,8 @@ describe('Data Integrity', () => {
     await resetGameTables();
   });
 
-  afterAll(async (done) => {
+  afterAll(async () => {
     await db.destroy();
-    done();
   });
 
   test('all mitigations have a non-null cost', async () => {
