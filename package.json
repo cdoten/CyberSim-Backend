@@ -25,7 +25,7 @@
     "save:scenario": "node -r dotenv/config scripts/save-scenario-revision.js",
     "reset-db:fixtures": "npm run rebuild-db:schema && npm run seed:fixtures",
     "reset-db:scenario": "npm run rebuild-db:schema && npm run seed:scenario",
-    "build-deploy": "zip -r deploy.zip . -x \"node_modules/*\" -x \"*.env*\" -x \".git/*\" -x \"*.zip\" -x \".vscode/*\""
+    "build-deploy": "zip -r deploy.zip . -x \"node_modules/*\" -x \"*.env*\" -x \".git/*\" -x \"*.zip\" -x \".vscode/*\" -x \".claude/*\""
   },
   "dependencies": {
     "@types/jest": "^26.0.8",
