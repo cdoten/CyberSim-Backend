@@ -3,29 +3,41 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const expressPino = require('express-pino-logger');
-
 const crypto = require('crypto');
+
+const { getScenarioBySlug } = require('./models/scenario');
+
+const SCENARIO_SLUG_REGEX = /^[a-z0-9-]+$/;
+
 const logger = require('./logger');
 const db = require('./models/db');
-const { getResponses } = require('./models/response');
-const { getInjections } = require('./models/injection');
-const { getActions } = require('./models/action');
+const { getResponsesByScenarioId } = require('./models/response');
+const { getInjectionsByScenarioId } = require('./models/injection');
+const { getActionsByScenarioId } = require('./models/action');
+
 const importScenarioFromAirtable = require('./util/importScenarioFromAirtable');
+const { getAirtableBaseId } = require('./util/airtable');
 const config = require('./config');
 const { transformValidationErrors } = require('./util/errors');
 
 const app = express();
 
-console.log('Loaded app.js commit:', process.env.GIT_COMMIT || 'unknown');
-console.log('Route enabled: POST /scenario/import');
+// Wrap async route handlers so thrown errors reach the error middleware.
+// Express 4 does not catch async throws automatically.
+const asyncRoute = (fn) => (req, res, next) =>
+  Promise.resolve(fn(req, res, next)).catch(next);
+
+logger.info({ commit: process.env.GIT_COMMIT || 'unknown' }, 'App loaded');
+
+// Resolve the requested scenario slug and return rows from one
+// scenario-scoped static table filtered by scenario_id.
+async function getScenarioRecords(tableName, scenarioSlug) {
+  const scenario = await getScenarioBySlug(scenarioSlug?.trim() || 'cso');
+  return db(tableName).where({ scenario_id: scenario.id });
+}
 
 app.use(helmet());
-app.use(cors());
-app.use(
-  expressPino({
-    logger,
-  }),
-);
+app.use(expressPino({ logger }));
 app.use(bodyParser.json());
 
 app.use((req, res, next) => {
@@ -84,14 +96,18 @@ app.get('/health', async (req, res) => {
 app.get('/health/airtable', async (req, res) => {
   try {
     const token = process.env.AIRTABLE_ACCESS_TOKEN;
-    const baseId = process.env.AIRTABLE_BASE_ID;
+    const baseIdsRaw = process.env.AIRTABLE_BASE_IDS || '';
 
-    if (!token || !baseId) {
+    if (!token || !baseIdsRaw) {
       return res.status(500).json({
         ok: false,
-        message: 'Missing AIRTABLE_ACCESS_TOKEN or AIRTABLE_BASE_ID',
+        message: 'Missing AIRTABLE_ACCESS_TOKEN or AIRTABLE_BASE_IDS',
       });
     }
+
+    // Use the first configured base as a connectivity sanity check.
+    const firstEntry = baseIdsRaw.split(',')[0].trim();
+    const baseId = firstEntry.split(':')[1];
 
     const url = `https://api.airtable.com/v0/meta/bases/${baseId}/tables`;
     const response = await fetch(url, {
@@ -148,73 +164,163 @@ app.get('/health/db', async (req, res) => {
   }
 });
 
-// STATIC DB data is exposed via REST api
-app.get('/mitigations', async (req, res) => {
-  const records = await db('mitigation');
-  res.json(records);
-});
+// Returns name and slug for the requested scenario.
+app.get(
+  '/scenario',
+  asyncRoute(async (req, res) => {
+    const scenario = await getScenarioBySlug(
+      req.query.scenarioSlug?.trim() || 'cso',
+    );
+    res.json({ slug: scenario.slug, name: scenario.name });
+  }),
+);
 
-app.get('/locations', async (req, res) => {
-  const records = await db('location');
-  res.json(records);
-});
+// Static scenario data is exposed via the REST API.
+app.get(
+  '/mitigations',
+  asyncRoute(async (req, res) => {
+    const records = await getScenarioRecords(
+      'mitigation',
+      req.query.scenarioSlug,
+    );
+    res.json(records);
+  }),
+);
 
-app.get('/dictionary', async (req, res) => {
-  const records = await db('dictionary').select('word', 'synonym');
-  res.json(records);
-});
+app.get(
+  '/locations',
+  asyncRoute(async (req, res) => {
+    const records = await getScenarioRecords(
+      'location',
+      req.query.scenarioSlug,
+    );
+    res.json(records);
+  }),
+);
 
-app.get('/systems', async (req, res) => {
-  const records = await db('system');
-  res.json(records);
-});
+app.get(
+  '/dictionary',
+  asyncRoute(async (req, res) => {
+    const records = await getScenarioRecords(
+      'dictionary',
+      req.query.scenarioSlug,
+    );
+    res.json(records.map(({ word, synonym }) => ({ word, synonym })));
+  }),
+);
 
-app.get('/injections', async (req, res) => {
-  const records = await getInjections();
-  res.json(records);
-});
+app.get(
+  '/systems',
+  asyncRoute(async (req, res) => {
+    const records = await getScenarioRecords('system', req.query.scenarioSlug);
+    res.json(records);
+  }),
+);
 
-app.get('/responses', async (req, res) => {
-  const records = await getResponses();
-  res.json(records);
-});
+app.get(
+  '/injections',
+  asyncRoute(async (req, res) => {
+    const scenario = await getScenarioBySlug(
+      req.query.scenarioSlug?.trim() || 'cso',
+    );
+    const records = await getInjectionsByScenarioId(scenario.id);
+    res.json(records);
+  }),
+);
 
-app.get('/actions', async (req, res) => {
-  const records = await getActions();
-  res.json(records);
-});
+app.get(
+  '/responses',
+  asyncRoute(async (req, res) => {
+    const scenario = await getScenarioBySlug(
+      req.query.scenarioSlug?.trim() || 'cso',
+    );
+    const records = await getResponsesByScenarioId(scenario.id);
+    res.json(records);
+  }),
+);
 
-app.get('/curveballs', async (req, res) => {
-  const records = await db('curveball');
-  res.json(records);
-});
+app.get(
+  '/actions',
+  asyncRoute(async (req, res) => {
+    const scenario = await getScenarioBySlug(
+      req.query.scenarioSlug?.trim() || 'cso',
+    );
+    const records = await getActionsByScenarioId(scenario.id);
+    res.json(records);
+  }),
+);
 
-app.post('/scenario/import', async (req, res) => {
-  const { password } = req.body;
+app.get(
+  '/curveballs',
+  asyncRoute(async (req, res) => {
+    const records = await getScenarioRecords(
+      'curveball',
+      req.query.scenarioSlug,
+    );
+    res.json(records);
+  }),
+);
 
-  // Ensure there is in fact some password set.
-  const configuredPassword = config.migrationPassword;
-  if (!config.migrationPassword) {
-    return res.status(500).send({ message: 'Migration disabled.' });
-  }
+app.post('/admin/scenarios/import', async (req, res) => {
+  const { scenarioSlug, password } = req.body || {};
+  const normalizedScenarioSlug = scenarioSlug?.trim();
 
-  if (password !== configuredPassword) {
-    return res.status(400).json({ password: 'Invalid migration password' });
-  }
-
-  const accessToken = process.env.AIRTABLE_ACCESS_TOKEN;
-  const baseId = process.env.AIRTABLE_BASE_ID;
-
-  if (!accessToken || !baseId) {
-    return res.status(500).send({
-      message:
-        'Server is missing Airtable configuration (AIRTABLE_ACCESS_TOKEN / AIRTABLE_BASE_ID).',
+  if (!normalizedScenarioSlug) {
+    return res.status(400).send({
+      message: 'Scenario slug is required.',
     });
   }
 
+  if (!SCENARIO_SLUG_REGEX.test(normalizedScenarioSlug)) {
+    return res.status(400).send({
+      message:
+        'Scenario slug must contain only lowercase letters, numbers, and hyphens.',
+    });
+  }
+
+  if (typeof password !== 'string' || !password) {
+    return res.status(400).send({
+      message: 'Scenario import password is required.',
+    });
+  }
+
+  const configuredPassword = config.migrationPassword;
+  if (!configuredPassword) {
+    return res.status(500).send({ message: 'Scenario import disabled.' });
+  }
+
+  if (password !== configuredPassword) {
+    return res.status(400).json({
+      password: 'Invalid scenario import password',
+    });
+  }
+
+  const accessToken = process.env.AIRTABLE_ACCESS_TOKEN;
+  if (!accessToken) {
+    return res.status(500).send({
+      message:
+        'Server is missing Airtable configuration (AIRTABLE_ACCESS_TOKEN).',
+    });
+  }
+
+  let baseId;
   try {
-    await importScenarioFromAirtable(accessToken, baseId);
-    return res.send();
+    baseId = getAirtableBaseId(normalizedScenarioSlug);
+  } catch (err) {
+    return res.status(400).send({ message: err.message });
+  }
+
+  try {
+    await importScenarioFromAirtable({
+      accessToken,
+      baseId,
+      scenarioSlug: normalizedScenarioSlug,
+    });
+
+    return res.status(200).send({
+      ok: true,
+      message: `Scenario "${normalizedScenarioSlug}" imported successfully.`,
+    });
   } catch (err) {
     if (err.error === 'AUTHENTICATION_REQUIRED') {
       return res.status(400).send({
@@ -224,7 +330,7 @@ app.post('/scenario/import', async (req, res) => {
 
     if (err.error === 'NOT_FOUND') {
       return res.status(400).send({
-        message: 'Invalid Airtable base id (server configuration).',
+        message: `Invalid Airtable base id for scenario "${normalizedScenarioSlug}".`,
       });
     }
 
@@ -242,6 +348,12 @@ app.post('/scenario/import', async (req, res) => {
       });
     }
 
+    if (err.code === 'ACTIVE_GAMES_EXIST') {
+      return res.status(409).send({
+        message: `Cannot import scenario "${normalizedScenarioSlug}" while active games exist.`,
+      });
+    }
+
     if (err.validation) {
       const errors = transformValidationErrors(err);
       return res.status(400).send({
@@ -251,10 +363,18 @@ app.post('/scenario/import', async (req, res) => {
       });
     }
 
-    logger.error(err);
+    logger.error(
+      {
+        scenarioSlug: normalizedScenarioSlug,
+        message: err.message,
+        stack: err.stack,
+      },
+      'Scenario import failed',
+    );
+
     return res.status(500).send({
       message:
-        'There was an internal server error during the migration! Please contact the developers to fix it.',
+        'There was an internal server error during scenario import. Please contact the developers to fix it.',
     });
   }
 });

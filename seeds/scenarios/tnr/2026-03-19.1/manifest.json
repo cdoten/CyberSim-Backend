@@ -1,0 +1,28 @@
+{
+  "tag": "tnr@2026-03-19.1",
+  "scenario": "tnr",
+  "revision": "2026-03-19.1",
+  "name": "tnr",
+  "exported_at": "2026-03-19T19:00:44.218Z",
+  "airtable": {
+    "base_id": "appUBqXDEAK06rYeC"
+  },
+  "db": {
+    "latest_migration": "20260319000100_text_columns_for_long_fields.js"
+  },
+  "git": {
+    "commit": "6e160e39d16c3265b8f445ea98b5fa83af283333"
+  },
+  "counts": {
+    "system": 8,
+    "role": 10,
+    "mitigation": 25,
+    "response": 52,
+    "injection": 44,
+    "action": 18,
+    "curveball": 10,
+    "action_role": 18,
+    "injection_response": 37,
+    "dictionary": 2
+  }
+}

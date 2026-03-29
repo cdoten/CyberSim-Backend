@@ -1,18 +1,59 @@
 // tests/seedTestData.js
 module.exports = async function seedTestData(db) {
-  // IMPORTANT: delete in FK-safe order if you keep deletes here.
-  // If you're already calling resetAllTables(), you can omit these del() calls.
+  // Truncate all tables in FK-safe order so this function is idempotent —
+  // safe to call against a non-empty DB without duplicate-key errors.
+  // Runtime tables first (they reference game), then static content,
+  // then the scenario parent row last.
+  await db('game_log').delete();
+  await db('game_mitigation').delete();
+  await db('game_system').delete();
+  await db('game_injection').delete();
+  await db('game').delete();
+  await db('action_role').delete();
+  await db('injection_response').delete();
+  await db('curveball').delete();
+  await db('action').delete();
+  // injection has a self-referential FK (followup_injection → injection.id),
+  // so null it out before deleting to avoid constraint errors.
+  await db('injection').update({ followup_injection: null });
+  await db('injection').delete();
+  await db('response').delete();
+  await db('mitigation').delete();
+  await db('role').delete();
+  await db('dictionary').delete();
+  await db('location').delete();
+  await db('system').delete();
+  await db('scenario').delete();
+
+  // SCENARIO — must be inserted first; all static content FKs reference it.
+  const [scenario] = await db('scenario')
+    .insert({ slug: 'cso', name: 'CSO Scenario' })
+    .returning('*');
+
+  const scenarioId = scenario.id;
 
   // SYSTEMS
   await db('system').insert([
-    { id: 'S1', name: 'Party website', description: '', type: 'party' },
-    { id: 'S2', name: 'DB', description: '', type: 'hq' },
+    {
+      id: 'S1',
+      name: 'Party website',
+      description: '',
+      type: 'party',
+      scenario_id: scenarioId,
+    },
+    {
+      id: 'S2',
+      name: 'DB',
+      description: '',
+      type: 'hq',
+      scenario_id: scenarioId,
+    },
   ]);
 
   // ROLES
   await db('role').insert([
-    { id: 'R1', name: 'Candidate 1' },
-    { id: 'R2', name: 'Candidate 2' },
+    { id: 'R1', name: 'Candidate 1', scenario_id: scenarioId },
+    { id: 'R2', name: 'Candidate 2', scenario_id: scenarioId },
   ]);
 
   // MITIGATIONS
@@ -24,15 +65,16 @@ module.exports = async function seedTestData(db) {
       cost: 1000,
       is_hq: true,
       is_local: true,
+      scenario_id: scenarioId,
     },
     {
       id: 'M2',
       description: 'Mitigation 2',
       category: 'Operation',
       cost: 1200,
-
       is_hq: false,
       is_local: true,
+      scenario_id: scenarioId,
     },
   ]);
 
@@ -46,6 +88,7 @@ module.exports = async function seedTestData(db) {
       systems_to_restore: ['S2'],
       required_mitigation: 'M1',
       required_mitigation_type: 'local',
+      scenario_id: scenarioId,
     },
     {
       id: 'RP2',
@@ -55,20 +98,23 @@ module.exports = async function seedTestData(db) {
       systems_to_restore: [],
       required_mitigation: null,
       required_mitigation_type: null,
+      scenario_id: scenarioId,
     },
   ]);
 
-  // Dictionary
+  // DICTIONARY
   await db('dictionary').insert([
     {
       id: 'rec8jJttwZ7gSK4F4',
       word: 'poll',
       synonym: 'poll',
+      scenario_id: scenarioId,
     },
     {
       id: 'recGrOxugbY8ZiF2r',
       word: 'budget',
       synonym: 'funds',
+      scenario_id: scenarioId,
     },
   ]);
 
@@ -90,6 +136,7 @@ module.exports = async function seedTestData(db) {
       skipper_mitigation: 'M1',
       recommendations: 'Placeholder recommendation 1',
       followup_injection: null,
+      scenario_id: scenarioId,
     },
     {
       id: 'I2',
@@ -105,6 +152,7 @@ module.exports = async function seedTestData(db) {
       skipper_mitigation: null,
       recommendations: 'Placeholder recommendation 2',
       followup_injection: null,
+      scenario_id: scenarioId,
     },
     {
       id: 'I3',
@@ -120,6 +168,7 @@ module.exports = async function seedTestData(db) {
       skipper_mitigation: 'M2',
       recommendations: 'Placeholder recommendation 3',
       followup_injection: null,
+      scenario_id: scenarioId,
     },
   ]);
 
@@ -130,8 +179,8 @@ module.exports = async function seedTestData(db) {
 
   // INJECTION_RESPONSE (join table)
   await db('injection_response').insert([
-    { response_id: 'RP1', injection_id: 'I1' },
-    { response_id: 'RP2', injection_id: 'I2' },
+    { response_id: 'RP1', injection_id: 'I1', scenario_id: scenarioId },
+    { response_id: 'RP2', injection_id: 'I2', scenario_id: scenarioId },
   ]);
 
   // ACTIONS
@@ -144,6 +193,7 @@ module.exports = async function seedTestData(db) {
       budget_increase: 0,
       poll_increase: 5,
       required_systems: ['S1', 'S2'],
+      scenario_id: scenarioId,
     },
     {
       id: 'A2',
@@ -153,14 +203,15 @@ module.exports = async function seedTestData(db) {
       budget_increase: 0,
       poll_increase: 5,
       required_systems: [],
+      scenario_id: scenarioId,
     },
   ]);
 
   // ACTION_ROLE (join table)
   await db('action_role').insert([
-    { action_id: 'A1', role_id: 'R1' },
-    { action_id: 'A1', role_id: 'R2' },
-    { action_id: 'A2', role_id: 'R2' },
+    { action_id: 'A1', role_id: 'R1', scenario_id: scenarioId },
+    { action_id: 'A1', role_id: 'R2', scenario_id: scenarioId },
+    { action_id: 'A2', role_id: 'R2', scenario_id: scenarioId },
   ]);
 
   // CURVEBALLS
@@ -170,8 +221,20 @@ module.exports = async function seedTestData(db) {
       description: 'Disaster',
       budget_change: -1000,
       poll_change: -10,
+      scenario_id: scenarioId,
     },
-    { id: 'C7', description: 'Miracle', budget_change: 1500, poll_change: 10 },
-    { id: 'C8', description: 'Oh My God', lose_all_budget: true },
+    {
+      id: 'C7',
+      description: 'Miracle',
+      budget_change: 1500,
+      poll_change: 10,
+      scenario_id: scenarioId,
+    },
+    {
+      id: 'C8',
+      description: 'Oh My God',
+      lose_all_budget: true,
+      scenario_id: scenarioId,
+    },
   ]);
 };

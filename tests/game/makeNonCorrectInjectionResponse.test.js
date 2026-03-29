@@ -16,9 +16,8 @@ describe('Make Non Correct Injection Response', () => {
     await db('game_injection').insert(dummyGameInjections);
   });
 
-  afterAll(async (done) => {
+  afterAll(async () => {
     await db.destroy();
-    done();
   });
 
   test('should set response time', async () => {

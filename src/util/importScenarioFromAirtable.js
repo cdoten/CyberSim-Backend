@@ -1,11 +1,29 @@
+/**
+ * Import one scenario's authored content from Airtable into the database.
+ *
+ * What it does:
+ * - Reads and validates Airtable source tables
+ * - Transforms Airtable records into DB-shaped scenario content
+ * - Upserts the scenario row and tags all static rows with scenario_id
+ * - Blocks import when active games exist for that scenario
+ * - Replaces only that scenario's static content inside a transaction
+ *
+ * Important notes:
+ * - This file imports scenario content only. It does not run schema migrations.
+ * - Runtime game state is intentionally preserved and is not recreated here.
+ * - Static content replacement is delegated to replaceScenarioContent().
+ */
+
 /* eslint no-param-reassign: "off", camelcase: "off", no-restricted-syntax: "off", guard-for-in: "off", no-await-in-loop: "off" */
 
 const Airtable = require('airtable');
 const yup = require('yup');
-const { dbSchemas, airtableSchemas } = require('./migration_schemas');
+const { dbSchemas, airtableSchemas } = require('./import_schemas');
 const db = require('../models/db');
 const logger = require('../logger');
 const { throwNecessaryValidationErrors } = require('./errors');
+const assertNoActiveGames = require('../services/scenario/assertNoActiveGames');
+const replaceScenarioContent = require('../services/scenario/replaceScenarioContent');
 
 const typeMap = {
   Table: 'Table',
@@ -68,7 +86,11 @@ function addPartyLocation(locations) {
     : locations?.[0];
 }
 
-async function migrate(accessToken, baseId) {
+async function importScenarioFromAirtable({
+  accessToken,
+  baseId,
+  scenarioSlug = 'cso',
+}) {
   // connect to the airtable instance
   Airtable.configure({
     endpointUrl: 'https://api.airtable.com',
@@ -80,7 +102,7 @@ async function migrate(accessToken, baseId) {
   // do a starting "fake" fetch to check if the personal access token and table id are correct
   await fetchTable(base, 'handbook_categories');
 
-  // define arrays for junctions tables that must be added at the end of the migration
+  // define arrays for junctions tables that must be added at the end of the import
   const injectionResponse = [];
   const actionRole = [];
 
@@ -104,7 +126,7 @@ async function migrate(accessToken, baseId) {
 
   throwNecessaryValidationErrors(
     validatedAirtableTables,
-    'There were airtable schema errors during the migration! Please fix them inside your airtable.',
+    'There were Airtable schema errors during the import. Please fix them inside your Airtable.',
   );
 
   const [
@@ -215,29 +237,37 @@ async function migrate(accessToken, baseId) {
     location.type = location.location_code;
   });
 
-  // clean the current db and re-migrate it
-  await db.migrate.rollback({}, true);
-  await db.migrate.latest();
+  // Upsert the scenario row so any configured slug works, not just the original
+  // default scenario from the single-scenario era. If the slug already exists,
+  // the merge is a no-op and we get the existing row back.
+  const [scenario] = await db('scenario')
+    .insert({ slug: scenarioSlug, name: scenarioSlug })
+    .onConflict('slug')
+    .merge()
+    .returning('*');
 
-  // add all the data to the db
-  // sequential processing is important here as some tables rely on data from other tables to be already there
+  const scenarioId = scenario.id;
+
+  const tag = (rows) =>
+    rows.map((row) => ({ ...row, scenario_id: scenarioId }));
+
   const validatedSqlTables = await Promise.allSettled([
-    validateForDb('location', locations),
-    validateForDb('dictionary', dictionary),
-    validateForDb('injection', injections),
-    validateForDb('mitigation', mitigations),
-    validateForDb('response', responses),
-    validateForDb('system', systems),
-    validateForDb('role', roles),
-    validateForDb('action', actions),
-    validateForDb('curveball', curveballs),
-    validateForDb('injection_response', injectionResponse),
-    validateForDb('action_role', actionRole),
+    validateForDb('location', tag(locations)),
+    validateForDb('dictionary', tag(dictionary)),
+    validateForDb('injection', tag(injections)),
+    validateForDb('mitigation', tag(mitigations)),
+    validateForDb('response', tag(responses)),
+    validateForDb('system', tag(systems)),
+    validateForDb('role', tag(roles)),
+    validateForDb('action', tag(actions)),
+    validateForDb('curveball', tag(curveballs)),
+    validateForDb('injection_response', tag(injectionResponse)),
+    validateForDb('action_role', tag(actionRole)),
   ]);
 
   throwNecessaryValidationErrors(
     validatedSqlTables,
-    'There were SQL schema errors during the migration! Please contact a developer about them.',
+    'Critical failure. There were SQL schema errors during the import.',
   );
 
   const [
@@ -254,30 +284,36 @@ async function migrate(accessToken, baseId) {
     sqlActionRole,
   ] = validatedSqlTables.map((table) => table.value);
 
+  await assertNoActiveGames({ scenarioId, scenarioSlug });
+
   await db.transaction(async (trx) => {
-    await trx('location').insert(sqlLocations);
-    await trx('dictionary').insert(sqlDictionary);
-    await trx('injection').insert(sqlInjections);
-    await trx('mitigation').insert(sqlMitigations);
-    await trx('response').insert(sqlResponses);
-    await trx('system').insert(sqlSystems);
-    await trx('role').insert(sqlRoles);
-    await trx('action').insert(sqlActions);
-    await trx('curveball').insert(sqlCurveballs);
-    await trx('injection_response').insert(sqlInjectionResponse);
-    await trx('action_role').insert(sqlActionRole);
+    await replaceScenarioContent({
+      trx,
+      scenarioId,
+      locations: sqlLocations,
+      dictionary: sqlDictionary,
+      injections: sqlInjections,
+      mitigations: sqlMitigations,
+      responses: sqlResponses,
+      systems: sqlSystems,
+      roles: sqlRoles,
+      actions: sqlActions,
+      curveballs: sqlCurveballs,
+      injectionResponse: sqlInjectionResponse,
+      actionRole: sqlActionRole,
+    });
   });
 
   // Write out information about the updates
   logger.info(
     {
-      baseId: process.env.AIRTABLE_BASE_ID,
+      baseId,
       mitigationCount: sqlMitigations.length,
       responseCount: sqlResponses.length,
       injectionCount: sqlInjections.length,
     },
-    'Migration inserted row counts',
+    'Import inserted row counts',
   );
 }
 
-module.exports = migrate;
+module.exports = importScenarioFromAirtable;

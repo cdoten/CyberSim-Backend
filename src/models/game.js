@@ -1,17 +1,36 @@
+/**
+ * Game domain model for creating, loading, and mutating runtime game state.
+ *
+ * What it does:
+ * - Creates scenario-specific games and initializes runtime game tables
+ * - Applies gameplay actions such as mitigations, responses, actions, and
+ *   curveballs
+ * - Returns fully assembled game state for the socket/game flow
+ *
+ * Important notes:
+ * - Games are scenario-aware at creation time via scenarioSlug.
+ * - After creation, most operations work from gameId because the game already
+ *   carries its scenario_id.
+ * - This file contains game rules and side effects, not just plain table reads.
+ */
 const db = require('./db');
 const { getResponsesById } = require('./response');
+const { getScenarioBySlug } = require('./scenario');
 const logger = require('../logger');
 const GameStates = require('../constants/GameStates');
 const { getTimeTaken } = require('../util');
 
 const ERR_NOT_ENOUGH_BUDGET = 'Not enough budget';
 const ERR_RESPONSE_NOT_ALLOWED = 'Response not allowed';
+const ERR_SYSTEMS_NOT_AVAILABLE =
+  'The required systems for this action are not available.';
 const ERR_CANNOT_START_FINALIZED_GAME = 'Cannot start finalized game';
 
 const getGame = (id) =>
   db('game')
     .select(
       'game.id',
+      'game.scenario_id',
       'game.state',
       'game.poll',
       'game.budget',
@@ -42,17 +61,24 @@ const createGame = async (
   id,
   initialBudget = 6000,
   initialPollPercentage = 55,
+  scenarioSlug = 'cso',
 ) => {
+  const scenario = await getScenarioBySlug(scenarioSlug);
+
   await db('game').insert(
     {
       id,
       budget: initialBudget,
       poll: initialPollPercentage,
+      scenario_id: scenario.id,
     },
     ['id'],
   );
 
-  const systems = await db('system').select('id').orderBy('id');
+  const systems = await db('system')
+    .select('id')
+    .where({ scenario_id: scenario.id })
+    .orderBy('id');
 
   await db('game_system').insert(
     systems.map(({ id: systemId }) => ({
@@ -62,7 +88,10 @@ const createGame = async (
     })),
   );
 
-  const mitigations = await db('mitigation').select('id').orderBy('id');
+  const mitigations = await db('mitigation')
+    .select('id')
+    .where({ scenario_id: scenario.id })
+    .orderBy('id');
 
   await db('game_mitigation').insert(
     mitigations.map(({ id: mitigationId }) => ({
@@ -72,7 +101,10 @@ const createGame = async (
     })),
   );
 
-  const injections = await db('injection').select('id').orderBy('id');
+  const injections = await db('injection')
+    .select('id')
+    .where({ scenario_id: scenario.id })
+    .orderBy('id');
 
   await db('game_injection').insert(
     injections.map(({ id: injectionId }) => ({
@@ -590,9 +622,7 @@ const performAction = async ({ gameId, actionId }) => {
       .whereIn('system_id', requiredSystems);
 
     if (unavailableSystems.length > 0) {
-      throw new Error(
-        'The required systems for this action are not available.',
-      );
+      throw new Error(ERR_SYSTEMS_NOT_AVAILABLE);
     }
 
     await db('game')
@@ -612,7 +642,7 @@ const performAction = async ({ gameId, actionId }) => {
     switch (error.message) {
       case 'Not enough budget':
         throw error;
-      case 'The required systems for this action are not available':
+      case ERR_SYSTEMS_NOT_AVAILABLE:
         throw error;
       default:
         throw new Error('Server error on performing action');

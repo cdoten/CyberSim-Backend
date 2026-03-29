@@ -19,9 +19,8 @@ describe('Create Game', () => {
     await resetGameTables();
   });
 
-  afterAll(async (done) => {
+  afterAll(async () => {
     await db.destroy();
-    done();
   });
 
   const { id: gameId } = dummyGame;

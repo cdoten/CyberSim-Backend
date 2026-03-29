@@ -1,0 +1,22 @@
+[
+  {
+    "id": "RP1",
+    "description": "Change office lock at LB",
+    "cost": 0,
+    "mitigation_id": null,
+    "systems_to_restore": [
+      "S2"
+    ],
+    "required_mitigation": "M1",
+    "required_mitigation_type": "local"
+  },
+  {
+    "id": "RP2",
+    "description": "Change office lock at LB",
+    "cost": 0,
+    "mitigation_id": "M2",
+    "systems_to_restore": [],
+    "required_mitigation": null,
+    "required_mitigation_type": null
+  }
+]

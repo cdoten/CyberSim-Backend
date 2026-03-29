@@ -1,0 +1,17 @@
+[
+  {
+    "id": 19,
+    "action_id": "A1",
+    "role_id": "R1"
+  },
+  {
+    "id": 20,
+    "action_id": "A1",
+    "role_id": "R2"
+  },
+  {
+    "id": 21,
+    "action_id": "A2",
+    "role_id": "R2"
+  }
+]

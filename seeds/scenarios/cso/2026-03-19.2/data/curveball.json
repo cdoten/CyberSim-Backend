@@ -1,0 +1,23 @@
+[
+  {
+    "id": "C4",
+    "description": "Disaster",
+    "lose_all_budget": false,
+    "budget_change": -1000,
+    "poll_change": -10
+  },
+  {
+    "id": "C7",
+    "description": "Miracle",
+    "lose_all_budget": false,
+    "budget_change": 1500,
+    "poll_change": 10
+  },
+  {
+    "id": "C8",
+    "description": "Oh My God",
+    "lose_all_budget": true,
+    "budget_change": 0,
+    "poll_change": 0
+  }
+]

@@ -1,0 +1,202 @@
+[
+  {
+    "id": "rec25xSvrJmeLA4uA",
+    "description": "Implement two-factor authentication and strong password requirements for accessing the OFD website",
+    "category": "Contact Management System & Website",
+    "cost": 500,
+    "is_hq": false,
+    "is_local": false
+  },
+  {
+    "id": "rec6EoH8FSkJwXZtz",
+    "description": "Implement two-factor authentication on all administrator accounts for the Grassroots Network's Facebook page",
+    "category": "Accounts",
+    "cost": 500,
+    "is_hq": false,
+    "is_local": false
+  },
+  {
+    "id": "rec6fboipi8qah9XI",
+    "description": "Establish secure backup solutions for all staff and volunteer devices and data",
+    "category": "Devices",
+    "cost": 1500,
+    "is_hq": false,
+    "is_local": false
+  },
+  {
+    "id": "rec7nxUsS92xhtK3n",
+    "description": "Secure online contact management system on blockchain",
+    "category": "Contact Management System & Website",
+    "cost": 500,
+    "is_hq": false,
+    "is_local": false
+  },
+  {
+    "id": "rec8cZHYOoKhA5KDj",
+    "description": "Purchase and monitor an advanced malware detection system on all staff/volunteer computers",
+    "category": "Devices",
+    "cost": 2000,
+    "is_hq": false,
+    "is_local": false
+  },
+  {
+    "id": "recA9oJ4CiSnNqeGV",
+    "description": "Install lockable filing cabinets to store sensitive material at the Grassroots Network's local office in Vario",
+    "category": "Physical / Office Security",
+    "cost": 500,
+    "is_hq": false,
+    "is_local": false
+  },
+  {
+    "id": "recBFuK15LZOwzZLX",
+    "description": "Implement two-factor authentication and strong passwords requirements for accessing the online contact management system",
+    "category": "Contact Management System & Website",
+    "cost": 500,
+    "is_hq": false,
+    "is_local": false
+  },
+  {
+    "id": "recgNwL9mYQJWxGor",
+    "description": "Implement two-factor authentication for all official OFD email accounts",
+    "category": "Accounts",
+    "cost": 1000,
+    "is_hq": false,
+    "is_local": false
+  },
+  {
+    "id": "recHwtpI6UsKuXivB",
+    "description": "Install strong lock on OFD headquarters office doors and windows",
+    "category": "Physical / Office Security",
+    "cost": 500,
+    "is_hq": false,
+    "is_local": false
+  },
+  {
+    "id": "recI0iHSg1SCSxy1n",
+    "description": "Implement a trusted virtual private network (VPN) for all staff and volunteers",
+    "category": "Devices",
+    "cost": 1000,
+    "is_hq": false,
+    "is_local": false
+  },
+  {
+    "id": "recI3lmHmEdgQzTgu",
+    "description": "Set up and monitor a remote device management system on all staff/volunteer mobile devices",
+    "category": "Devices",
+    "cost": 1500,
+    "is_hq": false,
+    "is_local": false
+  },
+  {
+    "id": "recIRvpseS7YAFx6c",
+    "description": "Install strong lock on Grassroots Network's local office doors and windows",
+    "category": "Physical / Office Security",
+    "cost": 500,
+    "is_hq": false,
+    "is_local": false
+  },
+  {
+    "id": "recM6LoCUSoRms8WQ",
+    "description": "Create a secure backup for the online contact management system",
+    "category": "Contact Management System & Website",
+    "cost": 1500,
+    "is_hq": false,
+    "is_local": false
+  },
+  {
+    "id": "recN5FU8uJ4ozQ2Pd",
+    "description": "Implement two-factor authentication on all administrator accounts for the OFD Facebook page",
+    "category": "Accounts",
+    "cost": 1000,
+    "is_hq": false,
+    "is_local": false
+  },
+  {
+    "id": "recPoa9WmMQCsn8Zi",
+    "description": "Implement two-factor authentication for Exec Director's personal accounts",
+    "category": "Accounts",
+    "cost": 500,
+    "is_hq": false,
+    "is_local": false
+  },
+  {
+    "id": "recQ8s0DSgJMQ81bH",
+    "description": "Implement PGP-encrypted email system",
+    "category": "Accounts",
+    "cost": 1000,
+    "is_hq": false,
+    "is_local": false
+  },
+  {
+    "id": "rectiIEGBaSynKMlO",
+    "description": "Turn on whole disk encryption on all staff/volunteer computers",
+    "category": "Devices",
+    "cost": 500,
+    "is_hq": false,
+    "is_local": false
+  },
+  {
+    "id": "recu7iIUPyoJh843h",
+    "description": "Install CCTV camera system at OFD's headquarters office",
+    "category": "Physical / Office Security",
+    "cost": 1000,
+    "is_hq": false,
+    "is_local": false
+  },
+  {
+    "id": "recuVYIY5iF6XzMI4",
+    "description": "Install lockable filing cabinets to store sensitive material at OFD's headquarters office in Praka",
+    "category": "Physical / Office Security",
+    "cost": 500,
+    "is_hq": false,
+    "is_local": false
+  },
+  {
+    "id": "recXxzdJYcSfl1AU1",
+    "description": "Set up DDOS protection for OFD's website",
+    "category": "Contact Management System & Website",
+    "cost": 1000,
+    "is_hq": false,
+    "is_local": false
+  },
+  {
+    "id": "recyFEFeyax7tL4Z8",
+    "description": "Use a reputable cloud-based email service (such as Google Workspace or Microsoft Office 365) for official @ofd.org accounts",
+    "category": "Accounts",
+    "cost": 1500,
+    "is_hq": false,
+    "is_local": false
+  },
+  {
+    "id": "recyGgqZJg0IwkAfj",
+    "description": "Enforce policy requiring all staff/volunteers to lock all devices (phones and computers) with strong passcodes",
+    "category": "Physical / Office Security",
+    "cost": 1000,
+    "is_hq": false,
+    "is_local": false
+  },
+  {
+    "id": "recyiPm1IKUYOr8pf",
+    "description": "Implement an enterprise password manager for all staff and volunteers",
+    "category": "Accounts",
+    "cost": 1000,
+    "is_hq": false,
+    "is_local": false
+  },
+  {
+    "id": "recYT8bpDEy5mutd0",
+    "description": "Buy password protected USBs for all staff/volunteers",
+    "category": "Devices",
+    "cost": 500,
+    "is_hq": false,
+    "is_local": false
+  },
+  {
+    "id": "recztBkwFaIvTIvFL",
+    "description": "Host the OFD website with a secure web-hosting provider",
+    "category": "Contact Management System & Website",
+    "cost": 1000,
+    "is_hq": false,
+    "is_local": false
+  }
+]

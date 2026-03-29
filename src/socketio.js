@@ -47,13 +47,24 @@ module.exports = (http) => {
 
     socket.on(
       SocketEvents.CREATEGAME,
-      async (id, initialBudget, initialPollPercentage, callback) => {
+      async (
+        id,
+        initialBudget,
+        initialPollPercentage,
+        scenarioSlug,
+        callback,
+      ) => {
         logger.info('CREATEGAME: %s', id);
         try {
+          // scenarioSlug comes from the frontend (derived from the subdomain).
+          // Fall back to the SCENARIO_SLUG env var if not provided, then 'cso'.
+          const resolvedSlug =
+            scenarioSlug || process.env.SCENARIO_SLUG || 'cso';
           const game = await createGame(
             id,
             initialBudget,
             initialPollPercentage,
+            resolvedSlug,
           );
           if (gameId) {
             await socket.leave(gameId);
@@ -61,30 +72,43 @@ module.exports = (http) => {
           await socket.join(id);
           gameId = id;
           callback({ game });
-        } catch (_) {
-          callback({ error: 'Game id already exists!' });
+        } catch (err) {
+          // Log the real error so it appears in backend logs, then return a
+          // user-facing message. Previously all errors returned "already exists"
+          // which masked unrelated failures (e.g. missing scenario).
+          logger.error('CREATEGAME ERROR: %s', err?.message || err);
+          const message =
+            err?.code === '23505'
+              ? 'Game id already exists!'
+              : `Failed to create game: ${err?.message || 'unknown error'}`;
+          callback({ error: message });
         }
       },
     );
 
-    socket.on(SocketEvents.JOINGAME, async (id, _, __, callback) => {
-      logger.info('JOINGAME: %s', id);
-      try {
-        const game = await getGame(id);
-        if (!game) {
-          callback({ error: 'Game not found!' });
+    // enterGame() on the client sends: id, initialBudget, initialPollPercentage, scenarioSlug, callback
+    // JOINGAME ignores everything except id and callback — the game already exists with its scenario.
+    socket.on(
+      SocketEvents.JOINGAME,
+      async (id, _, __, _scenarioSlug, callback) => {
+        logger.info('JOINGAME: %s', id);
+        try {
+          const game = await getGame(id);
+          if (!game) {
+            return callback({ error: 'Game not found!' });
+          }
+          if (gameId) {
+            await socket.leave(gameId);
+          }
+          await socket.join(id);
+          gameId = id;
+          return callback({ game });
+        } catch (error) {
+          logger.error('JOINGAME ERROR: %s', error);
+          return callback({ error: 'Server error on join game!' });
         }
-        if (gameId) {
-          await socket.leave(gameId);
-        }
-        await socket.join(id);
-        gameId = id;
-        callback({ game });
-      } catch (error) {
-        logger.error('JOINGAME ERROR: %s', error);
-        callback({ error: 'Server error on join game!' });
-      }
-    });
+      },
+    );
 
     socket.on(
       SocketEvents.CHANGEMITIGATION,

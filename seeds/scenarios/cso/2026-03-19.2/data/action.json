@@ -1,0 +1,23 @@
+[
+  {
+    "id": "A1",
+    "description": "Hold national campaign rally",
+    "type": "hq",
+    "cost": 1000,
+    "budget_increase": 0,
+    "poll_increase": 5,
+    "required_systems": [
+      "S1",
+      "S2"
+    ]
+  },
+  {
+    "id": "A2",
+    "description": "Hold national campaign rally",
+    "type": "local",
+    "cost": 1000,
+    "budget_increase": 0,
+    "poll_increase": 5,
+    "required_systems": []
+  }
+]

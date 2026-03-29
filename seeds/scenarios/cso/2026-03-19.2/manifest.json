@@ -1,0 +1,28 @@
+{
+  "tag": "cso@2026-03-19.2",
+  "scenario": "cso",
+  "revision": "2026-03-19.2",
+  "name": "CSO Scenario",
+  "exported_at": "2026-03-19T17:59:29.934Z",
+  "airtable": {
+    "base_id": "appyBBuEsmdRZfnlA"
+  },
+  "db": {
+    "latest_migration": "20260313000400_enforce_scenario_id_constraints.js"
+  },
+  "git": {
+    "commit": "6e160e39d16c3265b8f445ea98b5fa83af283333"
+  },
+  "counts": {
+    "system": 2,
+    "role": 2,
+    "mitigation": 2,
+    "response": 2,
+    "injection": 3,
+    "action": 2,
+    "curveball": 3,
+    "action_role": 3,
+    "injection_response": 2,
+    "dictionary": 2
+  }
+}

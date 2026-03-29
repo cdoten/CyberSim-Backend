@@ -1,0 +1,50 @@
+[
+  {
+    "id": "recl65MUsdHPv4mWj",
+    "name": "OFD Facebook",
+    "description": null,
+    "type": "hq"
+  },
+  {
+    "id": "reclFJ1zlKx41znpB",
+    "name": "GN Facebook",
+    "description": null,
+    "type": "local"
+  },
+  {
+    "id": "recltMBkG5VjLm9lx",
+    "name": "OFD Website",
+    "description": null,
+    "type": "party"
+  },
+  {
+    "id": "recWCLV98Ee7Wmj0a",
+    "name": "GN Computers",
+    "description": null,
+    "type": "local"
+  },
+  {
+    "id": "recXPadDc7sPspdpZ",
+    "name": "Contact Management System",
+    "description": null,
+    "type": "party"
+  },
+  {
+    "id": "recy7ApEd2VqFMg5M",
+    "name": "GN Phones",
+    "description": null,
+    "type": "local"
+  },
+  {
+    "id": "recynXIBsStyEQbzs",
+    "name": "OFD Computers",
+    "description": null,
+    "type": "hq"
+  },
+  {
+    "id": "recZTp8fGmaQYZi9c",
+    "name": "OFD Phones",
+    "description": null,
+    "type": "hq"
+  }
+]

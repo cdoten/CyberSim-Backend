@@ -1,0 +1,49 @@
+[
+  {
+    "id": "I1",
+    "title": "Injection 1",
+    "description": "Injection 1",
+    "recommendations": "Placeholder recommendation 1",
+    "trigger_time": 120000,
+    "location": "local",
+    "type": "Table",
+    "recipient_role": "LB role",
+    "asset_code": "1",
+    "skipper_mitigation": "M1",
+    "systems_to_disable": [
+      "S1"
+    ],
+    "poll_change": -0.5,
+    "followup_injection": "I2"
+  },
+  {
+    "id": "I2",
+    "title": "Injection 2",
+    "description": "Injection 2",
+    "recommendations": "Placeholder recommendation 2",
+    "trigger_time": 240000,
+    "location": "hq",
+    "type": "Table",
+    "recipient_role": "Hq role",
+    "asset_code": "2",
+    "skipper_mitigation": null,
+    "systems_to_disable": [],
+    "poll_change": -0.5,
+    "followup_injection": null
+  },
+  {
+    "id": "I3",
+    "title": "Injection 3",
+    "description": "Injection 3",
+    "recommendations": "Placeholder recommendation 3",
+    "trigger_time": 340000,
+    "location": "hq",
+    "type": "Table",
+    "recipient_role": "Hq role",
+    "asset_code": "3",
+    "skipper_mitigation": "M2",
+    "systems_to_disable": [],
+    "poll_change": null,
+    "followup_injection": null
+  }
+]

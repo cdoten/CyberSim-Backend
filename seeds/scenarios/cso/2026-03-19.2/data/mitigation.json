@@ -1,0 +1,18 @@
+[
+  {
+    "id": "M1",
+    "description": "Mitigation 1",
+    "category": "Operation",
+    "cost": 1000,
+    "is_hq": true,
+    "is_local": true
+  },
+  {
+    "id": "M2",
+    "description": "Mitigation 2",
+    "category": "Operation",
+    "cost": 1200,
+    "is_hq": false,
+    "is_local": true
+  }
+]

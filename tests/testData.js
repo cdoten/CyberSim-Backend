@@ -1,5 +1,6 @@
 const dummyGame = {
   id: 'TestGame',
+  scenario_id: 1,
   state: 'PREPARATION',
   poll: 55,
   budget: 6000,
@@ -23,13 +24,12 @@ const dummyGameMitigations = [
   },
 ];
 const dummyGameSystems = [
-  { id: 1, game_id: 'TestGame', system_id: 'S1', state: true },
-  { id: 2, game_id: 'TestGame', system_id: 'S2', state: true },
+  { game_id: 'TestGame', system_id: 'S1', state: true },
+  { game_id: 'TestGame', system_id: 'S2', state: true },
 ];
 
 const dummyGameInjections = [
   {
-    id: 1,
     injection_id: 'I1',
     game_id: 'TestGame',
     prevented: false,
@@ -39,7 +39,6 @@ const dummyGameInjections = [
     response_made_at: null,
   },
   {
-    id: 2,
     injection_id: 'I2',
     game_id: 'TestGame',
     prevented: false,
@@ -49,7 +48,6 @@ const dummyGameInjections = [
     response_made_at: null,
   },
   {
-    id: 3,
     injection_id: 'I3',
     game_id: 'TestGame',
     prevented: false,

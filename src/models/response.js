@@ -25,7 +25,17 @@ const getResponses = async () => {
   return records.map((response) => getResponseWithCost(response));
 };
 
+const getResponsesByScenarioId = async (scenarioId) => {
+  const records = await db('response')
+    .select('response.*', 'mitigation.cost as mitCost')
+    .leftOuterJoin('mitigation', 'response.mitigation_id', 'mitigation.id')
+    .where({ 'response.scenario_id': scenarioId });
+
+  return records.map((response) => getResponseWithCost(response));
+};
+
 module.exports = {
   getResponses,
   getResponsesById,
+  getResponsesByScenarioId,
 };
