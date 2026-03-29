@@ -86,11 +86,11 @@ function addPartyLocation(locations) {
     : locations?.[0];
 }
 
-async function importScenarioFromAirtable(
+async function importScenarioFromAirtable({
   accessToken,
   baseId,
   scenarioSlug = 'cso',
-) {
+}) {
   // connect to the airtable instance
   Airtable.configure({
     endpointUrl: 'https://api.airtable.com',

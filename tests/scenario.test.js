@@ -51,9 +51,8 @@ async function seedSecondScenario(knex) {
 // Single top-level teardown. Each describe block having its own db.destroy()
 // would close the connection pool mid-suite, causing "Unable to acquire a
 // connection" errors in subsequent describe blocks.
-afterAll(async (done) => {
+afterAll(async () => {
   await db.destroy();
-  done();
 });
 
 describe('getScenarioBySlug', () => {

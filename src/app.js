@@ -3,15 +3,18 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const expressPino = require('express-pino-logger');
+const crypto = require('crypto');
+
+const { getScenarioBySlug } = require('./models/scenario');
 
 const SCENARIO_SLUG_REGEX = /^[a-z0-9-]+$/;
 
-const crypto = require('crypto');
 const logger = require('./logger');
 const db = require('./models/db');
-const { getResponses } = require('./models/response');
-const { getInjections } = require('./models/injection');
-const { getActions } = require('./models/action');
+const { getResponsesByScenarioId } = require('./models/response');
+const { getInjectionsByScenarioId } = require('./models/injection');
+const { getActionsByScenarioId } = require('./models/action');
+
 const importScenarioFromAirtable = require('./util/importScenarioFromAirtable');
 const { getAirtableBaseId } = require('./util/airtable');
 const config = require('./config');
@@ -20,6 +23,13 @@ const { transformValidationErrors } = require('./util/errors');
 const app = express();
 
 logger.info({ commit: process.env.GIT_COMMIT || 'unknown' }, 'App loaded');
+
+// Resolve the requested scenario slug and return rows from one
+// scenario-scoped static table filtered by scenario_id.
+async function getScenarioRecords(tableName, scenarioSlug) {
+  const scenario = await getScenarioBySlug(scenarioSlug?.trim() || 'cso');
+  return db(tableName).where({ scenario_id: scenario.id });
+}
 
 app.use(helmet());
 app.use(expressPino({ logger }));
@@ -149,44 +159,59 @@ app.get('/health/db', async (req, res) => {
   }
 });
 
-// STATIC DB data is exposed via REST api
+// Static scenario data is exposed via the REST API.
 app.get('/mitigations', async (req, res) => {
-  const records = await db('mitigation');
+  const records = await getScenarioRecords(
+    'mitigation',
+    req.query.scenarioSlug,
+  );
   res.json(records);
 });
 
 app.get('/locations', async (req, res) => {
-  const records = await db('location');
+  const records = await getScenarioRecords('location', req.query.scenarioSlug);
   res.json(records);
 });
 
 app.get('/dictionary', async (req, res) => {
-  const records = await db('dictionary').select('word', 'synonym');
-  res.json(records);
+  const records = await getScenarioRecords(
+    'dictionary',
+    req.query.scenarioSlug,
+  );
+  res.json(records.map(({ word, synonym }) => ({ word, synonym })));
 });
 
 app.get('/systems', async (req, res) => {
-  const records = await db('system');
+  const records = await getScenarioRecords('system', req.query.scenarioSlug);
   res.json(records);
 });
 
 app.get('/injections', async (req, res) => {
-  const records = await getInjections();
+  const scenario = await getScenarioBySlug(
+    req.query.scenarioSlug?.trim() || 'cso',
+  );
+  const records = await getInjectionsByScenarioId(scenario.id);
   res.json(records);
 });
 
 app.get('/responses', async (req, res) => {
-  const records = await getResponses();
+  const scenario = await getScenarioBySlug(
+    req.query.scenarioSlug?.trim() || 'cso',
+  );
+  const records = await getResponsesByScenarioId(scenario.id);
   res.json(records);
 });
 
 app.get('/actions', async (req, res) => {
-  const records = await getActions();
+  const scenario = await getScenarioBySlug(
+    req.query.scenarioSlug?.trim() || 'cso',
+  );
+  const records = await getActionsByScenarioId(scenario.id);
   res.json(records);
 });
 
 app.get('/curveballs', async (req, res) => {
-  const records = await db('curveball');
+  const records = await getScenarioRecords('curveball', req.query.scenarioSlug);
   res.json(records);
 });
 

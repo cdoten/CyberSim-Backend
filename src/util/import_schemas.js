@@ -174,7 +174,7 @@ const dbSchemas = {
     description: yup.string().required(),
     poll_change: yup.number(),
     budget_change: yup.number(),
-    loose_all_budget: yup.number(),
+    lose_all_budget: yup.number(),
   }),
   injection_response: yup.object({
     scenario_id: scenarioId,

@@ -38,3 +38,7 @@ yarn-error.log*
 
 # Exports
 deploy.zip
+
+# Coding
+.claude
+.vscode

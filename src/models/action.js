@@ -13,6 +13,22 @@ const getActions = async () => {
   return records;
 };
 
+const getActionsByScenarioId = async (scenarioId) => {
+  const records = await db('action')
+    .select('action.*', 'r.roles')
+    .where({ 'action.scenario_id': scenarioId }).joinRaw(`
+      LEFT JOIN (
+        SELECT ar.action_id, array_agg(role.name) AS roles
+        FROM action_role ar
+        LEFT JOIN role
+        ON role.id = ar.role_id
+        GROUP BY ar.action_id
+      ) r ON r.action_id = action.id
+    `);
+  return records;
+};
+
 module.exports = {
   getActions,
+  getActionsByScenarioId,
 };
