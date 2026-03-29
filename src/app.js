@@ -22,6 +22,11 @@ const { transformValidationErrors } = require('./util/errors');
 
 const app = express();
 
+// Wrap async route handlers so thrown errors reach the error middleware.
+// Express 4 does not catch async throws automatically.
+const asyncRoute = (fn) => (req, res, next) =>
+  Promise.resolve(fn(req, res, next)).catch(next);
+
 logger.info({ commit: process.env.GIT_COMMIT || 'unknown' }, 'App loaded');
 
 // Resolve the requested scenario slug and return rows from one
@@ -159,61 +164,102 @@ app.get('/health/db', async (req, res) => {
   }
 });
 
+// Returns name and slug for the requested scenario.
+app.get(
+  '/scenario',
+  asyncRoute(async (req, res) => {
+    const scenario = await getScenarioBySlug(
+      req.query.scenarioSlug?.trim() || 'cso',
+    );
+    res.json({ slug: scenario.slug, name: scenario.name });
+  }),
+);
+
 // Static scenario data is exposed via the REST API.
-app.get('/mitigations', async (req, res) => {
-  const records = await getScenarioRecords(
-    'mitigation',
-    req.query.scenarioSlug,
-  );
-  res.json(records);
-});
+app.get(
+  '/mitigations',
+  asyncRoute(async (req, res) => {
+    const records = await getScenarioRecords(
+      'mitigation',
+      req.query.scenarioSlug,
+    );
+    res.json(records);
+  }),
+);
 
-app.get('/locations', async (req, res) => {
-  const records = await getScenarioRecords('location', req.query.scenarioSlug);
-  res.json(records);
-});
+app.get(
+  '/locations',
+  asyncRoute(async (req, res) => {
+    const records = await getScenarioRecords(
+      'location',
+      req.query.scenarioSlug,
+    );
+    res.json(records);
+  }),
+);
 
-app.get('/dictionary', async (req, res) => {
-  const records = await getScenarioRecords(
-    'dictionary',
-    req.query.scenarioSlug,
-  );
-  res.json(records.map(({ word, synonym }) => ({ word, synonym })));
-});
+app.get(
+  '/dictionary',
+  asyncRoute(async (req, res) => {
+    const records = await getScenarioRecords(
+      'dictionary',
+      req.query.scenarioSlug,
+    );
+    res.json(records.map(({ word, synonym }) => ({ word, synonym })));
+  }),
+);
 
-app.get('/systems', async (req, res) => {
-  const records = await getScenarioRecords('system', req.query.scenarioSlug);
-  res.json(records);
-});
+app.get(
+  '/systems',
+  asyncRoute(async (req, res) => {
+    const records = await getScenarioRecords('system', req.query.scenarioSlug);
+    res.json(records);
+  }),
+);
 
-app.get('/injections', async (req, res) => {
-  const scenario = await getScenarioBySlug(
-    req.query.scenarioSlug?.trim() || 'cso',
-  );
-  const records = await getInjectionsByScenarioId(scenario.id);
-  res.json(records);
-});
+app.get(
+  '/injections',
+  asyncRoute(async (req, res) => {
+    const scenario = await getScenarioBySlug(
+      req.query.scenarioSlug?.trim() || 'cso',
+    );
+    const records = await getInjectionsByScenarioId(scenario.id);
+    res.json(records);
+  }),
+);
 
-app.get('/responses', async (req, res) => {
-  const scenario = await getScenarioBySlug(
-    req.query.scenarioSlug?.trim() || 'cso',
-  );
-  const records = await getResponsesByScenarioId(scenario.id);
-  res.json(records);
-});
+app.get(
+  '/responses',
+  asyncRoute(async (req, res) => {
+    const scenario = await getScenarioBySlug(
+      req.query.scenarioSlug?.trim() || 'cso',
+    );
+    const records = await getResponsesByScenarioId(scenario.id);
+    res.json(records);
+  }),
+);
 
-app.get('/actions', async (req, res) => {
-  const scenario = await getScenarioBySlug(
-    req.query.scenarioSlug?.trim() || 'cso',
-  );
-  const records = await getActionsByScenarioId(scenario.id);
-  res.json(records);
-});
+app.get(
+  '/actions',
+  asyncRoute(async (req, res) => {
+    const scenario = await getScenarioBySlug(
+      req.query.scenarioSlug?.trim() || 'cso',
+    );
+    const records = await getActionsByScenarioId(scenario.id);
+    res.json(records);
+  }),
+);
 
-app.get('/curveballs', async (req, res) => {
-  const records = await getScenarioRecords('curveball', req.query.scenarioSlug);
-  res.json(records);
-});
+app.get(
+  '/curveballs',
+  asyncRoute(async (req, res) => {
+    const records = await getScenarioRecords(
+      'curveball',
+      req.query.scenarioSlug,
+    );
+    res.json(records);
+  }),
+);
 
 app.post('/admin/scenarios/import', async (req, res) => {
   const { scenarioSlug, password } = req.body || {};
