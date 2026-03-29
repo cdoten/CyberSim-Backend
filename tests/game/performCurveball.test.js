@@ -9,9 +9,8 @@ describe('Perform Curveball', () => {
     await db('game').insert(dummyGame);
   });
 
-  afterAll(async (done) => {
+  afterAll(async () => {
     await db.destroy();
-    done();
   });
 
   const gameId = dummyGame.id;

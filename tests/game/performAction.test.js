@@ -10,9 +10,8 @@ describe('Perform Action', () => {
     await db('game_system').insert(dummyGameSystems);
   });
 
-  afterAll(async (done) => {
+  afterAll(async () => {
     await db.destroy();
-    done();
   });
 
   const gameId = dummyGame.id;

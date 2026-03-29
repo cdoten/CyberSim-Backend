@@ -38,6 +38,8 @@ yarn-error.log*
 
 # Exports
 deploy.zip
+known-good-deploy-03-23.zip
+eb-config-template-working-2026-03-23-smaller.json
 
 # Coding
 .claude

@@ -1,11 +1,8 @@
-title = "CyberSim gitleaks config"
-
 [extend]
 useDefault = true
 
-[allowlist]
-description = "Help docs with placeholder credential and secret examples"
+[[allowlists]]
+description = "Docs with placeholder Airtable examples"
 paths = [
   '''(^|/)docs/airtable-handbook\.md$''',
-  '''(^|/)docs/aws-elasticbeanstalk-deployment\.md$''',
 ]

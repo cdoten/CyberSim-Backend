@@ -1,14 +1,12 @@
 const dummyGame = {
   id: 'TestGame',
+  scenario_id: 1,
   state: 'PREPARATION',
   poll: 55,
   budget: 6000,
   started_at: null,
   paused: true,
   millis_taken_before_started: 0,
-  // The test DB always resets from scratch (rollback → migrate → seed),
-  // so the scenario table sequence always starts at 1.
-  scenario_id: 1,
 };
 
 const dummyGameMitigations = [

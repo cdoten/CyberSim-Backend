@@ -21,9 +21,8 @@ describe('Make Responses', () => {
     await db('game_injection').insert(dummyGameInjections);
   });
 
-  afterAll(async (done) => {
+  afterAll(async () => {
     await db.destroy();
-    done();
   });
 
   test('should throw if required mitigation is down', async () => {

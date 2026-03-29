@@ -16,9 +16,8 @@ describe('Start Stimulation', () => {
     await db('game_injection').insert(dummyGameInjections);
   });
 
-  afterAll(async (done) => {
+  afterAll(async () => {
     await db.destroy();
-    done();
   });
 
   const gameId = dummyGame.id;
