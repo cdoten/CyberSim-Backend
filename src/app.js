@@ -261,6 +261,18 @@ app.get(
   }),
 );
 
+// Returns the list of scenario slugs configured via AIRTABLE_BASE_IDS.
+// No auth required — exposes slug names only, not base IDs or secrets.
+app.get('/admin/scenarios', (req, res) => {
+  const mapping = process.env.AIRTABLE_BASE_IDS || '';
+  const scenarios = mapping
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((s) => s.split(':')[0]);
+  res.json({ scenarios });
+});
+
 app.post('/admin/scenarios/import', async (req, res) => {
   const { scenarioSlug, password } = req.body || {};
   const normalizedScenarioSlug = scenarioSlug?.trim();
