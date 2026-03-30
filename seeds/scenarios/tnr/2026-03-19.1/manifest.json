@@ -8,7 +8,7 @@
     "base_id": "appUBqXDEAK06rYeC"
   },
   "db": {
-    "latest_migration": "20260319000100_text_columns_for_long_fields.js"
+    "latest_migration": "20260330000000_scenario_tables_composite_pk.js"
   },
   "git": {
     "commit": "6e160e39d16c3265b8f445ea98b5fa83af283333"

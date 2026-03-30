@@ -80,10 +80,16 @@ async function replaceScenarioContent({
   if (actions.length) await trx('action').insert(actions);
   if (curveballs.length) await trx('curveball').insert(curveballs);
   if (injectionResponse.length) {
-    await trx('injection_response').insert(injectionResponse);
+    // Strip auto-increment id — let Postgres assign fresh IDs so rows from
+    // different scenarios don't collide in the shared id sequence.
+    await trx('injection_response').insert(
+      injectionResponse.map(({ id: _id, ...rest }) => rest),
+    );
   }
   if (actionRole.length) {
-    await trx('action_role').insert(actionRole);
+    await trx('action_role').insert(
+      actionRole.map(({ id: _id, ...rest }) => rest),
+    );
   }
 }
 
