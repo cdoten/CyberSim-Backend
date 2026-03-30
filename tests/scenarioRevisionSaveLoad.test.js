@@ -330,6 +330,307 @@ describe('save-scenario-revision wrapper', () => {
   });
 });
 
+describe('loadScenarioRevision service', () => {
+  let tempRoot;
+  let loadScenarioRevision;
+  let mockDb;
+  let mockReplaceScenarioContent;
+  let mockAssertNoActiveGames;
+
+  beforeEach(() => {
+    jest.resetModules();
+
+    tempRoot = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'cybersim-load-scenario-test-'),
+    );
+
+    mockReplaceScenarioContent = jest.fn(async () => undefined);
+    mockAssertNoActiveGames = jest.fn(async () => undefined);
+
+    const insertApi = {
+      onConflict: jest.fn().mockReturnThis(),
+      merge: jest.fn().mockReturnThis(),
+      returning: jest.fn(async () => [
+        { id: 42, slug: 'cso', name: 'CSO Scenario' },
+      ]),
+    };
+
+    const knexMigrationsApi = {
+      select: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      first: jest.fn(async () => ({
+        name: '20260313000400_enforce_scenario_id_constraints.js',
+      })),
+    };
+
+    mockDb = jest.fn((tableName) => {
+      if (tableName === 'knex_migrations') return knexMigrationsApi;
+      return { insert: jest.fn(() => insertApi) };
+    });
+    mockDb.transaction = jest.fn(async (fn) => fn(mockDb));
+
+    jest.doMock('../src/models/db', () => mockDb);
+    jest.doMock(
+      '../src/services/scenario/replaceScenarioContent',
+      () => mockReplaceScenarioContent,
+    );
+    jest.doMock(
+      '../src/services/scenario/assertNoActiveGames',
+      () => mockAssertNoActiveGames,
+    );
+
+    ({
+      loadScenarioRevision,
+      // eslint-disable-next-line global-require
+    } = require('../src/services/scenario/loadScenarioRevision'));
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  });
+
+  function writeRevision(
+    scenariosRoot,
+    scenario,
+    revision,
+    manifest,
+    data = {},
+  ) {
+    const scenarioDir = path.join(scenariosRoot, scenario, revision);
+    const dataDir = path.join(scenarioDir, 'data');
+    fs.mkdirSync(dataDir, { recursive: true });
+
+    fs.writeFileSync(
+      path.join(scenarioDir, 'manifest.json'),
+      JSON.stringify({
+        scenario,
+        revision,
+        name: manifest.name || scenario,
+        ...manifest,
+      }),
+    );
+
+    const tables = [
+      'system',
+      'role',
+      'mitigation',
+      'response',
+      'injection',
+      'action',
+      'curveball',
+      'action_role',
+      'injection_response',
+      'location',
+    ];
+    tables.forEach((t) => {
+      fs.writeFileSync(
+        path.join(dataDir, `${t}.json`),
+        JSON.stringify(data[t] || []),
+      );
+    });
+  }
+
+  it('loads JSON files, upserts scenario row, and calls replaceScenarioContent', async () => {
+    const scenariosRoot = path.join(tempRoot, 'scenarios');
+    writeRevision(
+      scenariosRoot,
+      'cso',
+      '2026-03-28.1',
+      {
+        name: 'CSO Scenario',
+        db: {
+          latest_migration: '20260313000400_enforce_scenario_id_constraints.js',
+        },
+      },
+      {
+        location: [{ id: 'loc1', name: 'HQ', type: 'hq' }],
+      },
+    );
+
+    const result = await loadScenarioRevision({
+      scenarioSlug: 'cso',
+      scenarioRevision: '2026-03-28.1',
+      rootDir: scenariosRoot,
+    });
+
+    expect(result.scenarioSlug).toBe('cso');
+    expect(result.scenarioRevision).toBe('2026-03-28.1');
+    expect(result.counts.location).toBe(1);
+
+    expect(mockAssertNoActiveGames).toHaveBeenCalledWith({
+      scenarioId: 42,
+      scenarioSlug: 'cso',
+    });
+
+    expect(mockReplaceScenarioContent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scenarioId: 42,
+        locations: [{ id: 'loc1', name: 'HQ', type: 'hq', scenario_id: 42 }],
+      }),
+    );
+  });
+
+  it('throws for a missing scenario directory', async () => {
+    const scenariosRoot = path.join(tempRoot, 'scenarios');
+
+    await expect(
+      loadScenarioRevision({
+        scenarioSlug: 'unknown',
+        scenarioRevision: '2026-03-28.1',
+        rootDir: scenariosRoot,
+      }),
+    ).rejects.toThrow('Scenario revision not found');
+  });
+
+  it('throws on manifest mismatch', async () => {
+    const scenariosRoot = path.join(tempRoot, 'scenarios');
+    writeRevision(scenariosRoot, 'cso', '2026-03-28.1', {
+      scenario: 'other',
+      revision: '2026-03-28.1',
+      db: {
+        latest_migration: '20260313000400_enforce_scenario_id_constraints.js',
+      },
+    });
+
+    await expect(
+      loadScenarioRevision({
+        scenarioSlug: 'cso',
+        scenarioRevision: '2026-03-28.1',
+        rootDir: scenariosRoot,
+      }),
+    ).rejects.toThrow('Scenario revision manifest mismatch');
+  });
+
+  it('throws on migration mismatch', async () => {
+    const scenariosRoot = path.join(tempRoot, 'scenarios');
+    writeRevision(scenariosRoot, 'cso', '2026-03-28.1', {
+      name: 'CSO Scenario',
+      db: { latest_migration: 'some_old_migration.js' },
+    });
+
+    await expect(
+      loadScenarioRevision({
+        scenarioSlug: 'cso',
+        scenarioRevision: '2026-03-28.1',
+        rootDir: scenariosRoot,
+      }),
+    ).rejects.toThrow('Scenario revision migration mismatch');
+  });
+
+  it('throws when active games exist', async () => {
+    const scenariosRoot = path.join(tempRoot, 'scenarios');
+    writeRevision(scenariosRoot, 'cso', '2026-03-28.1', {
+      name: 'CSO Scenario',
+      db: {
+        latest_migration: '20260313000400_enforce_scenario_id_constraints.js',
+      },
+    });
+
+    const activeGamesErr = new Error('active games');
+    activeGamesErr.code = 'ACTIVE_GAMES_EXIST';
+    mockAssertNoActiveGames.mockRejectedValue(activeGamesErr);
+
+    await expect(
+      loadScenarioRevision({
+        scenarioSlug: 'cso',
+        scenarioRevision: '2026-03-28.1',
+        rootDir: scenariosRoot,
+      }),
+    ).rejects.toMatchObject({ code: 'ACTIVE_GAMES_EXIST' });
+  });
+});
+
+describe('load-scenario-revision wrapper', () => {
+  let db;
+  let service;
+  let originalArgv;
+  let originalEnv;
+  let originalConsoleLog;
+  let originalConsoleError;
+
+  beforeEach(() => {
+    jest.resetModules();
+
+    originalArgv = process.argv;
+    originalEnv = process.env;
+    originalConsoleLog = console.log;
+    originalConsoleError = console.error;
+
+    jest.doMock('../src/models/db', () => ({
+      destroy: jest.fn(async () => undefined),
+    }));
+
+    jest.doMock('../src/services/scenario/loadScenarioRevision', () => ({
+      loadScenarioRevision: jest.fn(
+        async ({ scenarioSlug, scenarioRevision }) => ({
+          scenarioSlug,
+          scenarioRevision,
+          counts: {},
+        }),
+      ),
+    }));
+
+    jest.doMock('../src/services/scenario/saveScenarioRevision', () => ({
+      parseScenarioTag: jest.fn((tag) => {
+        const [scenarioSlug, scenarioRevision] = tag.split('@');
+        return { scenarioSlug, scenarioRevision };
+      }),
+    }));
+
+    // eslint-disable-next-line global-require
+    db = require('../src/models/db');
+    // eslint-disable-next-line global-require
+    service = require('../src/services/scenario/loadScenarioRevision');
+
+    process.env = { ...originalEnv };
+    console.log = jest.fn();
+    console.error = jest.fn();
+  });
+
+  afterEach(() => {
+    process.argv = originalArgv;
+    process.env = originalEnv;
+    console.log = originalConsoleLog;
+    console.error = originalConsoleError;
+  });
+
+  it('prefers --tag over SCENARIO_TAG', async () => {
+    process.env.SCENARIO_TAG = 'envscenario@2026-03-28.1';
+    process.argv = [
+      'node',
+      'scripts/load-scenario-revision.js',
+      '--tag',
+      'argvscenario@2026-03-28.2',
+    ];
+
+    // eslint-disable-next-line global-require
+    const { main } = require('../scripts/load-scenario-revision');
+    await main(process.argv);
+
+    expect(service.loadScenarioRevision).toHaveBeenCalledWith({
+      scenarioSlug: 'argvscenario',
+      scenarioRevision: '2026-03-28.2',
+    });
+    expect(db.destroy).toHaveBeenCalled();
+  });
+
+  it('falls back to SCENARIO_TAG when no --tag arg', async () => {
+    process.env.SCENARIO_TAG = 'cso@2026-03-28.1';
+    process.argv = ['node', 'scripts/load-scenario-revision.js'];
+
+    // eslint-disable-next-line global-require
+    const { main } = require('../scripts/load-scenario-revision');
+    await main(process.argv);
+
+    expect(service.loadScenarioRevision).toHaveBeenCalledWith({
+      scenarioSlug: 'cso',
+      scenarioRevision: '2026-03-28.1',
+    });
+    expect(db.destroy).toHaveBeenCalled();
+  });
+});
+
 describe('02_scenario_seed', () => {
   let seedModule;
   let tempRoot;

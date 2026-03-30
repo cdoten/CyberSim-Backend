@@ -8,6 +8,7 @@ const getScenarioBySlug = async (slug) => {
   if (!scenario) {
     const err = new Error(`Scenario not found: "${slug}"`);
     err.statusCode = 404;
+    err.code = 'SCENARIO_NOT_FOUND';
     throw err;
   }
   return scenario;

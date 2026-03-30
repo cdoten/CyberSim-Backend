@@ -98,6 +98,7 @@ describe('POST /admin/scenarios/import', () => {
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
+      error: 'SCENARIO_SLUG_REQUIRED',
       message: 'Scenario slug is required.',
     });
 
@@ -113,6 +114,7 @@ describe('POST /admin/scenarios/import', () => {
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
+      error: 'INVALID_SCENARIO_SLUG',
       message:
         'Scenario slug must contain only lowercase letters, numbers, and hyphens.',
     });
