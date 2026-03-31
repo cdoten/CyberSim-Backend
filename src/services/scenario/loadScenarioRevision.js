@@ -126,7 +126,11 @@ async function loadScenarioRevision({
     loadJson(scenarioDir, 'injection_response.json') || [];
 
   const [scenarioRow] = await db('scenario')
-    .insert({ slug: scenarioSlug, name: manifest.name || scenarioSlug })
+    .insert({
+      slug: scenarioSlug,
+      name: manifest.name || scenarioSlug,
+      revision: scenarioRevision,
+    })
     .onConflict('slug')
     .merge()
     .returning('*');
