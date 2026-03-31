@@ -5,20 +5,80 @@ const cors = require('cors');
 const expressPino = require('express-pino-logger');
 const crypto = require('crypto');
 
-const { getScenarioBySlug } = require('./models/scenario');
-
-const SCENARIO_SLUG_REGEX = /^[a-z0-9-]+$/;
-
 const logger = require('./logger');
 const db = require('./models/db');
+const config = require('./config');
+
+const {
+  getScenarioBySlug,
+  listScenariosWithCounts,
+  deleteScenarioBySlug,
+} = require('./models/scenario');
+const { listGames, finishGame, deleteGame } = require('./models/game');
 const { getResponsesByScenarioId } = require('./models/response');
 const { getInjectionsByScenarioId } = require('./models/injection');
 const { getActionsByScenarioId } = require('./models/action');
 
+const {
+  loadScenarioRevision,
+} = require('./services/scenario/loadScenarioRevision');
+const {
+  listAvailableRevisions,
+} = require('./services/scenario/listAvailableRevisions');
+
 const importScenarioFromAirtable = require('./util/importScenarioFromAirtable');
 const { getAirtableBaseId } = require('./util/airtable');
-const config = require('./config');
 const { transformValidationErrors } = require('./util/errors');
+
+const SCENARIO_SLUG_REGEX = /^[a-z0-9-]+$/;
+
+// ---------------------------------------------------------------------------
+// Admin middleware
+// ---------------------------------------------------------------------------
+
+/**
+ * Enforce HTTPS in production. AWS EB/ELB terminates SSL and sets the
+ * x-forwarded-proto header. Requests that arrive over plain HTTP are
+ * rejected before any admin logic runs.
+ * In non-production environments the check is skipped so local dev works.
+ */
+function requireHttps(req, res, next) {
+  if (process.env.NODE_ENV === 'production') {
+    const proto = req.headers['x-forwarded-proto'] || req.protocol;
+    if (proto !== 'https') {
+      return res.status(403).json({
+        error: 'HTTPS_REQUIRED',
+        message: 'Admin endpoints require HTTPS.',
+      });
+    }
+  }
+  return next();
+}
+
+/**
+ * Require a valid admin password supplied in the X-Admin-Password request
+ * header. Reads the password from config.migrationPassword (the existing
+ * IMPORT_PASSWORD env var) so no new secrets are needed.
+ */
+function requireAdminPassword(req, res, next) {
+  const password = req.headers['x-admin-password'];
+  const configured = config.migrationPassword;
+  if (!configured) {
+    return res.status(503).json({ error: 'ADMIN_PASSWORD_NOT_CONFIGURED' });
+  }
+  if (!password) {
+    return res.status(401).json({
+      error: 'PASSWORD_REQUIRED',
+      message: 'X-Admin-Password header is required.',
+    });
+  }
+  if (password !== configured) {
+    return res
+      .status(401)
+      .json({ error: 'INVALID_PASSWORD', message: 'Invalid admin password.' });
+  }
+  return next();
+}
 
 const app = express();
 
@@ -39,6 +99,7 @@ async function getScenarioRecords(tableName, scenarioSlug) {
 app.use(helmet());
 app.use(expressPino({ logger }));
 app.use(bodyParser.json());
+app.use('/admin', requireHttps);
 
 app.use((req, res, next) => {
   req.id = crypto.randomUUID();
@@ -261,17 +322,178 @@ app.get(
   }),
 );
 
-// Returns the list of scenario slugs configured via AIRTABLE_BASE_IDS.
-// No auth required — exposes slug names only, not base IDs or secrets.
-app.get('/admin/scenarios', (req, res) => {
-  const mapping = process.env.AIRTABLE_BASE_IDS || '';
-  const scenarios = mapping
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map((s) => s.split(':')[0]);
-  res.json({ scenarios });
+// ---------------------------------------------------------------------------
+// Admin: scenario management
+// ---------------------------------------------------------------------------
+
+// GET /admin/scenarios — list all scenarios with counts; no password required
+app.get(
+  '/admin/scenarios',
+  asyncRoute(async (req, res) => {
+    const scenarios = await listScenariosWithCounts();
+    res.json({ scenarios });
+  }),
+);
+
+// GET /admin/scenarios/available — list revision tags on disk; no password required
+app.get('/admin/scenarios/available', (req, res) => {
+  res.json({ tags: listAvailableRevisions() });
 });
+
+// POST /admin/scenarios/load — load a revision from disk into the DB
+app.post(
+  '/admin/scenarios/load',
+  requireAdminPassword,
+  asyncRoute(async (req, res) => {
+    const { tag } = req.body || {};
+
+    if (!tag || typeof tag !== 'string') {
+      return res.status(400).json({
+        error: 'TAG_REQUIRED',
+        message: 'Body must include a tag field (e.g. "cso@2026-03-19.1").',
+      });
+    }
+
+    const atIndex = tag.indexOf('@');
+    if (atIndex === -1) {
+      return res.status(400).json({
+        error: 'INVALID_TAG_FORMAT',
+        message:
+          'Tag must be in the format "slug@revision" (e.g. "cso@2026-03-19.1").',
+      });
+    }
+
+    const scenarioSlug = tag.slice(0, atIndex);
+    const scenarioRevision = tag.slice(atIndex + 1);
+
+    if (!SCENARIO_SLUG_REGEX.test(scenarioSlug)) {
+      return res.status(400).json({
+        error: 'INVALID_SCENARIO_SLUG',
+        message:
+          'Scenario slug must contain only lowercase letters, numbers, and hyphens.',
+      });
+    }
+
+    try {
+      const result = await loadScenarioRevision({
+        scenarioSlug,
+        scenarioRevision,
+      });
+      return res.json({ ok: true, ...result });
+    } catch (err) {
+      if (err.code === 'ACTIVE_GAMES_EXIST') {
+        return res.status(409).json({
+          error: 'ACTIVE_GAMES_EXIST',
+          message: err.message,
+          activeGames: err.activeGames,
+        });
+      }
+      const msg = err.message || '';
+      if (
+        msg.includes('manifest mismatch') ||
+        msg.includes('migration mismatch') ||
+        msg.includes('not found')
+      ) {
+        return res.status(400).json({ error: 'LOAD_ERROR', message: msg });
+      }
+      logger.error({ tag, err: err.stack }, 'Scenario load failed');
+      return res
+        .status(500)
+        .json({ error: 'INTERNAL_ERROR', message: 'Scenario load failed.' });
+    }
+  }),
+);
+
+// DELETE /admin/scenarios/:slug — remove scenario + static content from DB
+app.delete(
+  '/admin/scenarios/:slug',
+  requireAdminPassword,
+  asyncRoute(async (req, res) => {
+    try {
+      const result = await deleteScenarioBySlug(req.params.slug);
+      return res.json(result);
+    } catch (err) {
+      if (err.code === 'SCENARIO_NOT_FOUND') {
+        return res.status(404).json({ error: err.code, message: err.message });
+      }
+      if (err.code === 'ACTIVE_GAMES_EXIST') {
+        return res.status(409).json({
+          error: err.code,
+          message: err.message,
+          activeGames: err.activeGames,
+        });
+      }
+      if (err.code === 'HISTORICAL_GAMES_EXIST') {
+        return res.status(409).json({
+          error: err.code,
+          message: err.message,
+          gameCount: err.gameCount,
+        });
+      }
+      logger.error(
+        { slug: req.params.slug, err: err.stack },
+        'Scenario delete failed',
+      );
+      return res
+        .status(500)
+        .json({ error: 'INTERNAL_ERROR', message: 'Scenario delete failed.' });
+    }
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// Admin: game management
+// ---------------------------------------------------------------------------
+
+// GET /admin/games — list games, optional ?scenarioSlug= filter
+app.get(
+  '/admin/games',
+  requireAdminPassword,
+  asyncRoute(async (req, res) => {
+    const games = await listGames({ scenarioSlug: req.query.scenarioSlug });
+    res.json({ games });
+  }),
+);
+
+// POST /admin/games/:id/finish — force game to ASSESSMENT (no socket involvement)
+app.post(
+  '/admin/games/:id/finish',
+  requireAdminPassword,
+  asyncRoute(async (req, res) => {
+    try {
+      const game = await finishGame(req.params.id);
+      return res.json({ ok: true, game });
+    } catch (err) {
+      if (err.code === 'GAME_NOT_FOUND') {
+        return res.status(404).json({ error: err.code, message: err.message });
+      }
+      logger.error({ id: req.params.id, err: err.stack }, 'Game finish failed');
+      return res
+        .status(500)
+        .json({ error: 'INTERNAL_ERROR', message: 'Game finish failed.' });
+    }
+  }),
+);
+
+// DELETE /admin/games/:id — delete game and all related rows
+app.delete(
+  '/admin/games/:id',
+  requireAdminPassword,
+  asyncRoute(async (req, res) => {
+    try {
+      const result = await deleteGame(req.params.id);
+      return res.json(result);
+    } catch (err) {
+      if (err.code === 'GAME_NOT_FOUND') {
+        return res.status(404).json({ error: err.code, message: err.message });
+      }
+      logger.error({ id: req.params.id, err: err.stack }, 'Game delete failed');
+      return res
+        .status(500)
+        .json({ error: 'INTERNAL_ERROR', message: 'Game delete failed.' });
+    }
+  }),
+);
 
 app.post('/admin/scenarios/import', async (req, res) => {
   const { scenarioSlug, password } = req.body || {};

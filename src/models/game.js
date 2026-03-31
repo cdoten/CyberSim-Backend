@@ -693,6 +693,62 @@ const performCurveball = async ({ gameId, curveballId }) => {
   return getGame(gameId);
 };
 
+// List games joined with their scenario, optionally filtered by scenarioSlug.
+const listGames = async ({ scenarioSlug } = {}) => {
+  let query = db('game')
+    .join('scenario', 'game.scenario_id', 'scenario.id')
+    .select(
+      'game.id',
+      'game.state',
+      'game.poll',
+      'game.budget',
+      'game.started_at',
+      'game.paused',
+      'scenario.slug as scenarioSlug',
+      'scenario.name as scenarioName',
+    )
+    .orderBy('game.started_at', 'desc');
+  if (scenarioSlug) {
+    query = query.where('scenario.slug', scenarioSlug);
+  }
+  return query;
+};
+
+// Force a game to ASSESSMENT state (admin override, no socket involvement).
+const finishGame = async (id) => {
+  const game = await db('game').where({ id }).first();
+  if (!game) {
+    const err = new Error(`Game "${id}" not found.`);
+    err.statusCode = 404;
+    err.code = 'GAME_NOT_FOUND';
+    throw err;
+  }
+  const [updated] = await db('game')
+    .where({ id })
+    .update({ state: 'ASSESSMENT' })
+    .returning('*');
+  return updated;
+};
+
+// Delete a game and all related runtime rows in FK-safe order.
+const deleteGame = async (id) => {
+  const game = await db('game').where({ id }).first();
+  if (!game) {
+    const err = new Error(`Game "${id}" not found.`);
+    err.statusCode = 404;
+    err.code = 'GAME_NOT_FOUND';
+    throw err;
+  }
+  await db.transaction(async (trx) => {
+    await trx('game_log').where({ game_id: id }).delete();
+    await trx('game_injection').where({ game_id: id }).delete();
+    await trx('game_system').where({ game_id: id }).delete();
+    await trx('game_mitigation').where({ game_id: id }).delete();
+    await trx('game').where({ id }).delete();
+  });
+  return { deleted: true, id };
+};
+
 module.exports = {
   createGame,
   getGame,
@@ -704,4 +760,7 @@ module.exports = {
   deliverGameInjection,
   makeNonCorrectInjectionResponse,
   performCurveball,
+  listGames,
+  finishGame,
+  deleteGame,
 };
